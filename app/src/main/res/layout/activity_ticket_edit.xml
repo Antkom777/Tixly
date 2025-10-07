@@ -13,7 +13,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:hint="Подія">
+            android:hint="@string/ticket_title_hint">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editTicketTitle"
@@ -27,7 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:hint="Місце проведення">
+            android:hint="@string/ticket_venue_hint">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editTicketVenue"
@@ -41,7 +41,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            android:hint="Дата та час (натисніть для вибору)">
+            android:hint="@string/ticket_date_hint">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editTicketDate"
@@ -49,104 +49,65 @@
                 android:layout_height="wrap_content"
                 android:inputType="none"
                 android:focusable="false"
-                android:clickable="true"
-                android:drawableEnd="@android:drawable/ic_menu_my_calendar"
-                android:drawablePadding="8dp" />
+                android:clickable="true" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Панель з іконками для дій -->
+        <!-- Action buttons row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginTop="24dp">
+            android:layout_marginTop="16dp">
 
+            <!-- Save ticket button -->
             <ImageButton
                 android:id="@+id/buttonSaveTicket"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_margin="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_save"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Зберегти"
-                android:scaleType="fitCenter"
-                android:padding="12dp" />
+                android:contentDescription="@string/save_ticket_desc"
+                android:padding="12dp"
+                android:layout_weight="1" />
 
+            <!-- Open PDF button -->
             <ImageButton
                 android:id="@+id/buttonOpenTicket"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_margin="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_view"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Відкрити PDF"
-                android:scaleType="fitCenter"
-                android:padding="12dp" />
+                android:contentDescription="@string/open_pdf_desc"
+                android:padding="12dp"
+                android:layout_weight="1" />
 
+            <!-- Replace PDF button -->
             <ImageButton
                 android:id="@+id/buttonReplacePdf"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_margin="8dp"
-                android:src="@android:drawable/ic_menu_rotate"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Замінити PDF"
-                android:scaleType="fitCenter"
-                android:padding="12dp" />
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/pdf_change_transparent_32"
+                android:contentDescription="@string/replace_pdf_desc"
+                android:padding="12dp"
+                android:layout_weight="1" />
 
+            <!-- Delete ticket button -->
             <ImageButton
                 android:id="@+id/buttonDeleteTicket"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_margin="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_delete"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Видалити квиток"
-                android:scaleType="fitCenter"
-                android:padding="12dp" />
-
-        </LinearLayout>
-
-        <!-- Підписи під іконками -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
-
-            <TextView
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="Зберегти"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:textColor="@android:color/darker_gray" />
-
-            <TextView
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="Відкрити PDF"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:textColor="@android:color/darker_gray" />
-
-            <TextView
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="Замінити PDF"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:textColor="@android:color/darker_gray" />
-
-            <TextView
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="Видалити"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:textColor="@android:color/darker_gray" />
+                android:contentDescription="@string/delete_ticket_desc"
+                android:padding="12dp"
+                android:layout_weight="1" />
 
         </LinearLayout>
 

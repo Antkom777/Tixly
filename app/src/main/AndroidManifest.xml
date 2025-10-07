@@ -8,8 +8,21 @@
 
     <!-- Дозвіл для читання файлів -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <!-- Дозвіл на доступ до Інтернету для реклами (якщо потрібно) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Дозвіл на управління зовнішнім сховищем для Android 11+ -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
+    <!-- Дозвіл на запит усіх пакетів для вирішення намірів -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
 
     <application
+        android:name=".TixlyApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -51,6 +64,16 @@
         <!-- Активність для редагування квитків -->
         <activity
             android:name=".TicketEditActivity"
+            android:exported="false"
+            android:parentActivityName=".TicketsActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".TicketsActivity" />
+        </activity>
+
+        <!-- Активність налаштувань -->
+        <activity
+            android:name=".SettingsActivity"
             android:exported="false"
             android:parentActivityName=".TicketsActivity">
             <meta-data

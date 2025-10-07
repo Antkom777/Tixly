@@ -25,7 +25,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug") // Використовуємо debug ключ для тестування
+            signingConfig = signingConfigs.getByName("debug") // Using debug key for testing
         }
         debug {
             isMinifyEnabled = false
@@ -62,7 +62,7 @@ dependencies {
     implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // Для роботи з PDF файлами (залишаємо закоментованим поки що)
+    // For PDF file processing (keeping commented for now)
     // implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
     testImplementation("junit:junit:4.13.2")

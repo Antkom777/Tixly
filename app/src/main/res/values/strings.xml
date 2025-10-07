@@ -1,57 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Tixly</string>
+    <string name="settings">Налаштування</string>
+    <string name="exit">Вихід</string>
 
-    <!-- MainActivity -->
-    <string name="main_title">Tixly</string>
-    <string name="main_subtitle">Ваш помічник для управління квитками</string>
-    <string name="button_add_ticket">Додати квиток з PDF</string>
-    <string name="button_view_tickets">Переглянути квитки</string>
-    <string name="button_exit">Вихід</string>
+    <!-- Settings strings -->
+    <string name="language_setting">Мова додатка</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_english">English</string>
 
-    <!-- TicketsActivity -->
-    <string name="tickets_title">Мої квитки</string>
-    <string name="no_tickets">Немає збережених квитків</string>
-    <string name="ticket_deleted">Квиток видалено</string>
+    <string name="notifications_setting">Нагадування</string>
+    <string name="notifications_enabled">Увімкнути нагадування</string>
+    <string name="notification_time_before">Час нагадування</string>
 
-    <!-- TicketEditActivity -->
-    <string name="edit_ticket_title">Редагувати квиток</string>
-    <string name="new_ticket_title">Новий квиток</string>
-    <string name="hint_ticket_title">Назва квитка</string>
-    <string name="hint_ticket_description">Опис</string>
-    <string name="hint_ticket_venue">Місце проведення</string>
-    <string name="hint_ticket_price">Ціна</string>
-    <string name="hint_ticket_seat">Інформація про місця</string>
-    <string name="hint_ticket_date">Дата події (дд.мм.рррр гг:хх)</string>
-    <string name="button_save">Зберегти</string>
-    <string name="button_delete">Видалити квиток</string>
-    <string name="button_add_to_calendar">Додати в календар</string>
+    <string name="remove_ads_setting">Відключити рекламу</string>
+    <string name="remove_ads_message">Дякую за підтримку!</string>
 
-    <!-- Messages -->
-    <string name="processing">Обробка PDF файлу...</string>
-    <string name="ticket_saved">Квиток успішно збережено!</string>
-    <string name="ticket_updated">Квиток оновлено</string>
-    <string name="pdf_shared">PDF файл отримано через Share</string>
-    <string name="pdf_opened">PDF файл відкрито в додатку</string>
-    <string name="pdf_error">Не вдалося обробити PDF файл</string>
-    <string name="processing_error">Помилка при обробці PDF: %1$s</string>
-    <string name="enter_title">Введіть назву квитка</string>
-    <string name="calendar_added">Подію додано в календар</string>
-    <string name="calendar_error">Не вдалося додати в календар</string>
-    <string name="calendar_permission_denied">Дозвіл на календар відхилено</string>
-    <string name="calendar_need_date">Для додавання в календар потрібна дата події</string>
+    <string name="time_1_hour">За 1 годину</string>
+    <string name="time_2_hours">За 2 години</string>
+    <string name="time_1_day">За 1 день</string>
+    <string name="time_2_days">За 2 дні</string>
+    <string name="time_1_week">За 1 тиждень</string>
 
-    <!-- Dialog messages -->
-    <string name="ticket_created_title">Квиток збережено</string>
-    <string name="ticket_created_message">Квиток створено!\n\nНазва: %1$s\nМісце: %2$s\nДата: %3$s\nЦіна: %4$s\nМісця: %5$s</string>
-    <string name="delete_confirmation_title">Видалити квиток</string>
-    <string name="delete_confirmation_message">Ви впевнені, що хочете видалити цей квиток?</string>
-    <string name="view_all_tickets">Переглянути всі квитки</string>
-    <string name="ok">OK</string>
-    <string name="cancel">Скасувати</string>
-
-    <!-- Ticket fields -->
+    <!-- Ticket strings -->
+    <string name="my_tickets">Мої квитки</string>
+    <string name="add_ticket">Додати квиток</string>
+    <string name="ticket_title_placeholder">(Без назви)</string>
     <string name="date_not_specified">Дата не вказана</string>
     <string name="venue_not_specified">Місце не вказано</string>
-    <string name="price_not_specified">Ціна не вказана</string>
+
+    <!-- PDF processing strings -->
+    <string name="pdf_received_via_share">PDF файл отримано через Share</string>
+    <string name="pdf_opened_in_app">PDF файл відкрито в додатку</string>
+    <string name="processing_pdf">Обробка PDF файлу...</string>
+    <string name="pdf_processed_successfully">PDF файл успішно оброблено! Редагуйте квиток та збережіть його.</string>
+    <string name="ticket_saved_successfully">Квиток успішно збережено!</string>
+    <string name="pdf_already_used">Цей PDF файл вже використовується в квитку \"%1$s\". Оберіть інший файл.</string>
+    <string name="failed_to_process_pdf">Не вдалося обробити PDF файл</string>
+    <string name="pdf_processing_error">Помилка при обробці PDF: %1$s</string>
+    <string name="no_app_to_open_pdf">Немає додатка для відкриття PDF</string>
+    <string name="pdf_open_error">Помилка відкриття PDF: %1$s</string>
+    <string name="pdf_not_found">PDF файл не знайдено для цього квитка</string>
+    <string name="no_saved_tickets">Немає збережених квитків</string>
+
+    <!-- Ad strings -->
+    <string name="ad_banner">Реклама</string>
+
+    <!-- Ticket editing strings -->
+    <string name="edit_ticket">Редагувати квиток</string>
+    <string name="new_ticket">Новий квиток</string>
+    <string name="create_ticket_copy">Створення копії квитка</string>
+    <string name="ticket_title_hint">Подія</string>
+    <string name="ticket_venue_hint">Місце проведення</string>
+    <string name="ticket_date_hint">Дата та час (натисніть для вибору)</string>
+    <string name="enter_ticket_title">Введіть назву квитка</string>
+    <string name="ticket_updated">Квиток оновлено</string>
+    <string name="ticket_saved">Квиток збережено</string>
+    <string name="delete_ticket">Видалити квиток</string>
+    <string name="delete_ticket_confirmation">Ви впевнені, що хочете видалити цей квиток?</string>
+    <string name="delete">Видалити</string>
+    <string name="cancel">Скасувати</string>
+    <string name="cancelled">Скасовано</string>
+    <string name="ticket_deleted">Квиток видалено</string>
+    <string name="replace_pdf_file">Замінити PDF файл</string>
+    <string name="replace_pdf_confirmation">Ви впевнені, що хочете замінити поточний PDF файл? Старий файл буде видалено.</string>
+    <string name="replace">Замінити</string>
+    <string name="pdf_file_replaced">PDF файл замінено</string>
+    <string name="pdf_replacement_error">Помилка заміни PDF: %1$s</string>
+    <string name="select_pdf_for_copy">Оберіть PDF файл для копії квитка</string>
+    <string name="ticket_copy_created">Копію квитка створено</string>
+    <string name="pdf_save_error">Помилка збереження PDF: %1$s</string>
+    <string name="manually_created_ticket">Квиток створено вручну</string>
+
+    <!-- Content descriptions for buttons -->
+    <string name="save_ticket_desc">Зберегти квиток</string>
+    <string name="open_pdf_desc">Відкрити PDF</string>
+    <string name="replace_pdf_desc">Замінити PDF</string>
+    <string name="delete_ticket_desc">Видалити квиток</string>
+
+    <!-- Add ticket dialog strings -->
+    <string name="add_ticket_dialog_title">Додати квиток</string>
+    <string name="add_ticket_from_pdf">З PDF файлу</string>
+    <string name="add_ticket_manually">Створити вручну</string>
+
+    <!-- Unsaved changes dialog strings -->
+    <string name="unsaved_changes">Незбережені зміни</string>
+    <string name="unsaved_changes_message">У вас є незбережені зміни. Що ви хочете зробити?</string>
+    <string name="save">Зберегти</string>
+    <string name="discard">Відкинути</string>
+
+    <!-- Additional strings needed by code -->
+    <string name="event_on">Подія</string>
+    <string name="new_event">Новий квиток</string>
+
+    <!-- Sample ticket strings (used in TicketsRepository) -->
+    <string name="sample_ticket_1_title">Концерт рок-групи</string>
+    <string name="sample_ticket_1_venue">Палац спорту</string>
+
+    <string name="sample_ticket_2_title">Театральна вистава</string>
+    <string name="sample_ticket_2_venue">Національний театр</string>
 </resources>

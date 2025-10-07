@@ -2,6 +2,7 @@ package com.tixly.app.utils
 
 import android.content.Context
 import android.net.Uri
+import android.content.Intent
 import com.tixly.app.data.Ticket
 import com.tixly.app.data.TicketsRepository
 import java.io.File
@@ -12,23 +13,36 @@ class PDFProcessor(private val context: Context) {
 
     fun processPDF(uri: Uri): Ticket? {
         return try {
-            // Спочатку перевіряємо на дублювання PDF файлу
+            // First check for PDF file duplication
             val fileName = getFileNameFromUri(uri)
             if (fileName != null) {
                 val duplicateTicket = checkForDuplicatePdf(fileName)
                 if (duplicateTicket != null) {
-                    // Повертаємо null і показуємо помилку в активності
+                    // Return null and show error in activity
                     return null
                 }
             }
 
-            // Копіюємо PDF файл у внутрішнє сховище додатка
+            // Take persistent permission for content URIs
+            if (uri.scheme == "content") {
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (e: SecurityException) {
+                    android.util.Log.w("PDFProcessor", "Could not take persistable permission for URI: $uri", e)
+                    // Continue anyway, the internal copy might work
+                }
+            }
+
+            // Copy PDF file to app's internal storage
             val savedPdfPath = savePdfToInternalStorage(uri)
 
-            // Створюємо квиток з базовою назвою та шляхом до збереженого PDF
+            // Create ticket with basic title and path to saved PDF
             Ticket(
-                title = "Новий квиток",
-                description = "Квиток з PDF файлу",
+                title = context.getString(com.tixly.app.R.string.new_event),
+                description = context.getString(com.tixly.app.R.string.manually_created_ticket),
                 eventDate = null,
                 venue = null,
                 pdfUri = uri.toString(),
@@ -67,17 +81,17 @@ class PDFProcessor(private val context: Context) {
 
     private fun savePdfToInternalStorage(uri: Uri): String? {
         return try {
-            // Створюємо папку для PDF файлів у внутрішньому сховищі
+            // Create folder for PDF files in internal storage
             val pdfDir = File(context.filesDir, "pdf_tickets")
             if (!pdfDir.exists()) {
                 pdfDir.mkdirs()
             }
 
-            // Генеруємо унікальне ім'я файлу
+            // Generate unique file name
             val fileName = "ticket_${UUID.randomUUID()}.pdf"
             val destinationFile = File(pdfDir, fileName)
 
-            // Копіюємо файл
+            // Copy file
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 FileOutputStream(destinationFile).use { outputStream ->
                     inputStream.copyTo(outputStream)

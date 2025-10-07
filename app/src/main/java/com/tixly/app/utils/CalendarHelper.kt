@@ -27,7 +27,7 @@ class CalendarHelper(private val context: Context) {
             try {
                 val values = ContentValues().apply {
                     put(CalendarContract.Events.DTSTART, eventDate.time)
-                    put(CalendarContract.Events.DTEND, eventDate.time + (2 * 60 * 60 * 1000)) // +2 години
+                    put(CalendarContract.Events.DTEND, eventDate.time + (2 * 60 * 60 * 1000)) // +2 hours
                     put(CalendarContract.Events.TITLE, ticket.title)
                     put(CalendarContract.Events.DESCRIPTION, buildEventDescription(ticket))
                     put(CalendarContract.Events.EVENT_LOCATION, ticket.venue)
@@ -38,7 +38,7 @@ class CalendarHelper(private val context: Context) {
 
                 val uri = context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
 
-                // Додаємо нагадування за 1 годину до події
+                // Add reminder 1 hour before event
                 uri?.let { eventUri ->
                     addEventReminder(eventUri.lastPathSegment?.toLongOrNull() ?: 0L, 60)
                 }
@@ -79,7 +79,7 @@ class CalendarHelper(private val context: Context) {
             }
         }
 
-        return 1L // Fallback до першого календаря
+        return 1L // Fallback to first calendar
     }
 
     private fun addEventReminder(eventId: Long, minutesBefore: Int) {

@@ -6,13 +6,12 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import com.tixly.app.utils.PDFProcessor
 import com.tixly.app.data.TicketsRepository
 import java.io.File
 import kotlin.system.exitProcess
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private lateinit var pdfProcessor: PDFProcessor
 
@@ -81,7 +80,7 @@ class MainActivity : AppCompatActivity() {
                         intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
                     }
                     pdfUri?.let { uri ->
-                        Toast.makeText(this, "PDF файл отримано через Share", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.pdf_received_via_share), Toast.LENGTH_SHORT).show()
                         processPdfFile(uri)
                         return true
                     }
@@ -90,7 +89,7 @@ class MainActivity : AppCompatActivity() {
             Intent.ACTION_VIEW -> {
                 if (intent.type == "application/pdf") {
                     intent.data?.let { uri ->
-                        Toast.makeText(this, "PDF файл відкрито в додатку", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.pdf_opened_in_app), Toast.LENGTH_SHORT).show()
                         processPdfFile(uri)
                         return true
                     }
@@ -101,20 +100,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun processPdfFile(uri: Uri) {
-        Toast.makeText(this, "Обробка PDF файлу...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.processing_pdf), Toast.LENGTH_SHORT).show()
 
         try {
             val ticket = pdfProcessor.processPDF(uri)
             if (ticket != null) {
-                // Додаємо тікет до спільного сховища
-                TicketsRepository.addTicket(ticket)
-                Toast.makeText(this, "Квиток успішно збережено!", Toast.LENGTH_LONG).show()
+                // НЕ додаємо тікет до репозиторію одразу - передаємо його в редактор
+                // Показуємо повідомлення про успішну обробку PDF, а не про збереження квитка
+                Toast.makeText(this, getString(R.string.pdf_processed_successfully), Toast.LENGTH_LONG).show()
 
-                // Одразу відкриваємо екран редагування нового квитка
+                // Відкриваємо екран редагування з тимчасовим квитком
                 val intent = Intent(this, TicketEditActivity::class.java)
-                intent.putExtra("TICKET_ID", ticket.id)
+                intent.putExtra("TEMP_TICKET_DATA", ticket.toJson()) // Передаємо як JSON
                 startActivity(intent)
-                finish()
+                // НЕ викликаємо finish() - залишаємо MainActivity в стеку для правильної навігації назад
             } else {
                 // Перевіряємо, чи це через дублювання PDF
                 val fileName = getFileNameFromUri(uri)
@@ -129,7 +128,7 @@ class MainActivity : AppCompatActivity() {
                     if (duplicateTicket != null) {
                         Toast.makeText(
                             this,
-                            "Цей PDF файл вже використовується в квитку \"${duplicateTicket.title}\". Оберіть інший файл.",
+                            getString(R.string.pdf_already_used, duplicateTicket.title),
                             Toast.LENGTH_LONG
                         ).show()
                         // Переходимо до списку квитків
@@ -140,14 +139,14 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                Toast.makeText(this, "Не вдалося обробити PDF файл", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.failed_to_process_pdf), Toast.LENGTH_LONG).show()
                 // Переходимо до списку квитків
                 val intent = Intent(this, TicketsActivity::class.java)
                 startActivity(intent)
                 finish()
             }
         } catch (e: Exception) {
-            Toast.makeText(this, "Помилка при обробці PDF: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.pdf_processing_error, e.message), Toast.LENGTH_LONG).show()
             e.printStackTrace()
         }
     }

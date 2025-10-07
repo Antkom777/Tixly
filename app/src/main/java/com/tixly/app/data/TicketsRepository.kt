@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.tixly.app.R
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -12,12 +13,14 @@ object TicketsRepository {
     private val gson = Gson()
     private val tickets = mutableListOf<Ticket>()
     private var isInitialized = false
+    private var context: Context? = null
 
     fun initialize(context: Context) {
         if (!isInitialized) {
+            this.context = context
             sharedPreferences = context.getSharedPreferences("tixly_tickets_data", Context.MODE_PRIVATE)
             loadTickets()
-            // Додаємо логування для діагностики
+            // Add logging for diagnostics
             android.util.Log.d("TicketsRepository", "Initialized with ${tickets.size} tickets")
             if (tickets.isEmpty()) {
                 android.util.Log.d("TicketsRepository", "No saved tickets found, creating sample data")
@@ -43,7 +46,7 @@ object TicketsRepository {
             }
         } catch (e: Exception) {
             android.util.Log.e("TicketsRepository", "Error loading tickets", e)
-            // Очищуємо пошкоджені дані
+            // Clear corrupted data
             tickets.clear()
         }
     }
@@ -63,15 +66,17 @@ object TicketsRepository {
     }
 
     fun addTicket(ticket: Ticket) {
+        android.util.Log.d("TicketsRepository", "addTicket called: ID=${ticket.id}, Title='${ticket.title}', TempTicket=${ticket.pdfFilePath != null}")
+        android.util.Log.d("TicketsRepository", "Stack trace:", Exception("addTicket called"))
         tickets.add(ticket)
         saveTickets()
     }
 
     fun removeTicket(ticketId: String) {
-        // Знаходимо квиток для видалення його PDF файлу
+        // Find ticket to remove its PDF file
         val ticketToRemove = tickets.find { it.id == ticketId }
 
-        // Видаляємо PDF файл з внутрішнього сховища якщо він є
+        // Remove PDF file from internal storage if it exists
         ticketToRemove?.pdfFilePath?.let { filePath ->
             try {
                 val file = java.io.File(filePath)
@@ -83,7 +88,7 @@ object TicketsRepository {
             }
         }
 
-        // Видаляємо квиток зі списку
+        // Remove ticket from list
         tickets.removeAll { it.id == ticketId }
         saveTickets()
     }
@@ -109,33 +114,35 @@ object TicketsRepository {
     }
 
     private fun initializeWithSampleTickets() {
-        // Додаємо тестові квитки тільки якщо немає збережених
-        val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+        context?.let { ctx ->
+            // Add test tickets only if no saved tickets exist
+            val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
 
-        val sampleTickets = listOf(
-            Ticket(
-                id = "1",
-                title = "Концерт рок-групи",
-                description = "Дозволено фото та відео",
-                venue = "Палац спорту",
-                eventDate = try { dateFormat.parse("15.12.2024 19:00") } catch (e: Exception) { null },
-                seatInfo = "Сектор А, ряд 5, місце 12",
-                price = "1200 грн",
-                pdfFilePath = null
-            ),
-            Ticket(
-                id = "2",
-                title = "Театральна вистава",
-                description = "Дрес-код: офіційний",
-                venue = "Національний театр",
-                eventDate = try { dateFormat.parse("20.12.2024 18:30") } catch (e: Exception) { null },
-                seatInfo = "Партер, ряд 10, місце 8",
-                price = "800 грн",
-                pdfFilePath = null
+            val sampleTickets = listOf(
+                Ticket(
+                    id = "1",
+                    title = ctx.getString(R.string.sample_ticket_1_title),
+                    description = "",
+                    venue = ctx.getString(R.string.sample_ticket_1_venue),
+                    eventDate = try { dateFormat.parse("15.12.2024 19:00") } catch (e: Exception) { null },
+                    seatInfo = null,
+                    price = null,
+                    pdfFilePath = null
+                ),
+                Ticket(
+                    id = "2",
+                    title = ctx.getString(R.string.sample_ticket_2_title),
+                    description = "",
+                    venue = ctx.getString(R.string.sample_ticket_2_venue),
+                    eventDate = try { dateFormat.parse("20.12.2024 18:30") } catch (e: Exception) { null },
+                    seatInfo = null,
+                    price = null,
+                    pdfFilePath = null
+                )
             )
-        )
 
-        tickets.addAll(sampleTickets)
-        saveTickets()
+            tickets.addAll(sampleTickets)
+            saveTickets()
+        }
     }
 }

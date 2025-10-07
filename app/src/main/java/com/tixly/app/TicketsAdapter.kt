@@ -44,38 +44,44 @@ class TicketsAdapter(
         private val buttonOpen: ImageButton = itemView.findViewById(R.id.buttonOpenTicket)
 
         fun bind(ticket: Ticket) {
-            textTitle.text = ticket.title
+            // Захищаємо від порожніх назв квитків
+            textTitle.text = if (ticket.title.isBlank()) {
+                itemView.context.getString(R.string.ticket_title_placeholder)
+            } else {
+                ticket.title
+            }
+
             textDate.text = if (ticket.eventDate != null) {
                 ticket.getFormattedEventDate()
             } else {
-                "Дата не вказана"
+                itemView.context.getString(R.string.date_not_specified)
             }
-            textVenue.text = ticket.venue ?: "Місце не вказано"
+            textVenue.text = ticket.venue ?: itemView.context.getString(R.string.venue_not_specified)
 
-            // Перевіряємо чи є прив'язаний PDF файл
+            // Check if there's an attached PDF file
             val hasPdf = (!ticket.pdfUri.isNullOrEmpty()) ||
                          (!ticket.pdfFilePath.isNullOrEmpty() && File(ticket.pdfFilePath).exists())
             buttonOpen.isEnabled = hasPdf
-            buttonOpen.alpha = if (hasPdf) 1.0f else 0.5f // Візуально показуємо неактивність
+            buttonOpen.alpha = if (hasPdf) 1.0f else 0.5f // Visually show inactive state
 
-            // Підсвічуємо квитки залежно від статусу
+            // Highlight tickets based on status
             when {
                 ticket.eventDate == null -> {
-                    // Квитки без дати - білий фон
+                    // Tickets without date - white background
                     itemView.setBackgroundColor(itemView.context.getColor(android.R.color.white))
                     textTitle.setTextColor(itemView.context.getColor(android.R.color.black))
                     textDate.setTextColor(itemView.context.getColor(android.R.color.darker_gray))
                     textVenue.setTextColor(itemView.context.getColor(android.R.color.darker_gray))
                 }
                 ticket.isUpcoming() -> {
-                    // Майбутні квитки - дуже блідо-зелений фон для кращої читабельності
-                    itemView.setBackgroundColor(0xFFE8F5E8.toInt()) // Дуже блідий зелений
+                    // Future tickets - very pale green background for better readability
+                    itemView.setBackgroundColor(0xFFE8F5E8.toInt()) // Very pale green
                     textTitle.setTextColor(itemView.context.getColor(android.R.color.black))
                     textDate.setTextColor(itemView.context.getColor(android.R.color.darker_gray))
                     textVenue.setTextColor(itemView.context.getColor(android.R.color.darker_gray))
                 }
                 else -> {
-                    // Прострочені квитки - сірий фон
+                    // Expired tickets - gray background
                     itemView.setBackgroundColor(itemView.context.getColor(android.R.color.darker_gray))
                     textTitle.setTextColor(itemView.context.getColor(android.R.color.white))
                     textDate.setTextColor(itemView.context.getColor(android.R.color.white))

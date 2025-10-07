@@ -36,19 +36,24 @@ proguard/
 # Android Studio captures folder
 captures/
 
-# IntelliJ
+# IntelliJ IDEA
 *.iml
+*.iws
+*.ipr
+.idea/
 .idea/workspace.xml
 .idea/tasks.xml
 .idea/gradle.xml
 .idea/assetWizardSettings.xml
 .idea/dictionaries
 .idea/libraries
-# Android Studio 3 in .gitignore file.
 .idea/caches
 .idea/modules.xml
-# Comment next line if keeping position of elements in Navigation Editor is desired
 .idea/navEditor.xml
+.idea/misc.xml
+.idea/compiler.xml
+.idea/jarRepositories.xml
+.idea/deploymentTargetDropDown.xml
 
 # Keystore files
 # Uncomment the following lines if you do not want to check your keystore files in.
@@ -94,5 +99,83 @@ lint/tmp/
 # Gradle Wrapper (Optional)
 # gradle/wrapper/
 
-# Test files
-test_ticket.pdf
+# MacOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Netbeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+
+# CMake
+cmake-build-*/
+
+# File-based project format
+*.iws
+
+# mpeltonen/sbt-idea plugin
+.idea_modules/
+
+# JIRA plugin
+atlassian-ide-plugin.xml
+
+# Cursive Clojure plugin
+.idea/replstate.xml
+
+# SonarLint plugin
+.idea/sonarlint/
+
+# Crashlytics plugin (for Android Studio and IntelliJ)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Editor-based Rest Client
+.idea/httpRequests
+
+# Android Studio 3.1+ serialized cache file
+.idea/caches/build_file_checksums.ser
+
+# NDK
+obj/
+
+# Backup files
+*.bak
+
+# R8 mapping files
+app/release/output-metadata.json
+
+# Bundle files
+*.bundle
+
+# APK Signature Scheme v2 and v3 signature files
+*.idsig
+
+# Play Console upload files
+app-release.aab
+
+# Custom additions for this project
+*.pid
+gradlew.bat

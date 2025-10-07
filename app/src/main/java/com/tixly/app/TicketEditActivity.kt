@@ -18,7 +18,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
-class TicketEditActivity : AppCompatActivity() {
+class TicketEditActivity : BaseActivity() {
 
     private lateinit var editTitle: EditText
     private lateinit var editVenue: EditText
@@ -31,7 +31,9 @@ class TicketEditActivity : AppCompatActivity() {
     private var ticketId: String? = null
     private var copyFromTicketId: String? = null
     private var currentTicket: Ticket? = null
+    private var tempTicket: Ticket? = null // Додаємо для тимчасових квитків з PDF
     private var selectedDate: Calendar = Calendar.getInstance()
+    private var currentLanguage: String = ""
 
     // Launcher для вибору нового PDF файлу при заміні
     private val selectReplacementPdfLauncher = registerForActivityResult(
@@ -51,6 +53,10 @@ class TicketEditActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_ticket_edit)
 
+        // Запам'ятовуємо поточну мову
+        val settingsManager = com.tixly.app.utils.SettingsManager(this)
+        currentLanguage = settingsManager.getLanguage()
+
         // Налаштовуємо action bar
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -61,7 +67,41 @@ class TicketEditActivity : AppCompatActivity() {
         ticketId = intent.getStringExtra("TICKET_ID")
         copyFromTicketId = intent.getStringExtra("COPY_FROM_TICKET_ID")
 
+        // Перевіряємо, чи є тимчасовий квиток з PDF
+        intent.getStringExtra("TEMP_TICKET_DATA")?.let { tempData ->
+            tempTicket = Ticket.fromJson(tempData)
+        }
+
         loadTicketData()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        // Перевіряємо, чи змінилася мова
+        val settingsManager = com.tixly.app.utils.SettingsManager(this)
+        val newLanguage = settingsManager.getLanguage()
+        if (newLanguage != currentLanguage) {
+            // Мова змінилася, перезавантажуємо активність
+            recreate()
+            return
+        }
+
+        // Оновлюємо заголовок активності при поверненні (наприклад, після зміни мови)
+        updateActivityTitle()
+    }
+
+    private fun updateActivityTitle() {
+        copyFromTicketId?.let {
+            supportActionBar?.title = getString(R.string.create_ticket_copy)
+            return
+        }
+
+        ticketId?.let {
+            supportActionBar?.title = getString(R.string.edit_ticket)
+        } ?: run {
+            supportActionBar?.title = getString(R.string.new_ticket)
+        }
     }
 
     private fun initViews() {
@@ -104,7 +144,7 @@ class TicketEditActivity : AppCompatActivity() {
         copyFromTicketId?.let { copyId ->
             val templateTicket = TicketsRepository.getTicketById(copyId)
             templateTicket?.let { ticket ->
-                supportActionBar?.title = "Створення копії квитка"
+                supportActionBar?.title = getString(R.string.create_ticket_copy)
 
                 // Копіюємо всі поля крім ID та PDF
                 editTitle.setText(ticket.title)
@@ -116,7 +156,7 @@ class TicketEditActivity : AppCompatActivity() {
                 }
 
                 // Показуємо повідомлення про необхідність вибору PDF
-                Toast.makeText(this, "Оберіть PDF файл для копії квитка", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.select_pdf_for_copy), Toast.LENGTH_LONG).show()
 
                 // Автоматично відкриваємо селектор PDF
                 selectCopyPdfLauncher.launch("application/pdf")
@@ -134,7 +174,7 @@ class TicketEditActivity : AppCompatActivity() {
         ticketId?.let { id ->
             currentTicket = TicketsRepository.getTicketById(id)
             currentTicket?.let { ticket ->
-                supportActionBar?.title = "Редагувати квиток"
+                supportActionBar?.title = getString(R.string.edit_ticket)
 
                 editTitle.setText(ticket.title)
                 editVenue.setText(ticket.venue ?: "")
@@ -148,23 +188,45 @@ class TicketEditActivity : AppCompatActivity() {
                 val hasPdf = !ticket.pdfUri.isNullOrEmpty() || (!ticket.pdfFilePath.isNullOrEmpty() && File(ticket.pdfFilePath).exists())
                 buttonOpen.isEnabled = hasPdf
                 buttonOpen.alpha = if (hasPdf) 1.0f else 0.5f
-                buttonReplace.isEnabled = hasPdf
-                buttonReplace.alpha = if (hasPdf) 1.0f else 0.5f
+                // Кнопка заміни PDF завжди активна
+                buttonReplace.isEnabled = true
+                buttonReplace.alpha = 1.0f
             }
         } ?: run {
             // Новий квиток
-            supportActionBar?.title = "Новий квиток"
+            supportActionBar?.title = getString(R.string.new_ticket)
             buttonOpen.isEnabled = false
             buttonOpen.alpha = 0.5f
-            buttonReplace.isEnabled = false
-            buttonReplace.alpha = 0.5f
+            // Кнопка заміни PDF активна для можливості додавання PDF до нового квитка
+            buttonReplace.isEnabled = true
+            buttonReplace.alpha = 1.0f
+        }
+
+        // Якщо це тимчасовий квиток з PDF
+        tempTicket?.let { ticket ->
+            supportActionBar?.title = getString(R.string.edit_ticket)
+
+            editTitle.setText(ticket.title)
+            editVenue.setText(ticket.venue ?: "")
+
+            ticket.eventDate?.let { date ->
+                selectedDate.time = date
+                updateDateField()
+            }
+
+            // Налаштовуємо кнопки PDF
+            val hasPdf = !ticket.pdfUri.isNullOrEmpty() || (!ticket.pdfFilePath.isNullOrEmpty() && File(ticket.pdfFilePath).exists())
+            buttonOpen.isEnabled = hasPdf
+            buttonOpen.alpha = if (hasPdf) 1.0f else 0.5f
+            buttonReplace.isEnabled = hasPdf
+            buttonReplace.alpha = if (hasPdf) 1.0f else 0.5f
         }
     }
 
     private fun saveTicket() {
         val title = editTitle.text.toString().trim()
         if (title.isEmpty()) {
-            Toast.makeText(this, "Введіть назву квитка", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.enter_ticket_title), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -177,29 +239,40 @@ class TicketEditActivity : AppCompatActivity() {
             null
         }
 
-        val ticket = if (currentTicket != null) {
-            // Оновлюємо існуючий квиток, зберігаючи pdfUri
-            currentTicket!!.copy(
-                title = title,
-                venue = venue,
-                eventDate = eventDate
-            )
-        } else {
-            // Створюємо новий квиток
-            Ticket(
-                title = title,
-                description = "Квиток створено вручну",
-                venue = venue,
-                eventDate = eventDate
-            )
+        val ticket = when {
+            currentTicket != null -> {
+                // Оновлюємо існуючий квиток
+                currentTicket!!.copy(
+                    title = title,
+                    venue = venue,
+                    eventDate = eventDate
+                )
+            }
+            tempTicket != null -> {
+                // Зберігаємо тимчасовий квиток з PDF
+                tempTicket!!.copy(
+                    title = title,
+                    venue = venue,
+                    eventDate = eventDate
+                )
+            }
+            else -> {
+                // Створюємо новий квиток
+                Ticket(
+                    title = title,
+                    description = getString(R.string.manually_created_ticket),
+                    venue = venue,
+                    eventDate = eventDate
+                )
+            }
         }
 
         if (currentTicket != null) {
             TicketsRepository.updateTicket(ticket)
-            Toast.makeText(this, "Квиток оновлено", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.ticket_updated), Toast.LENGTH_SHORT).show()
         } else {
             TicketsRepository.addTicket(ticket)
-            Toast.makeText(this, "Квиток збережено", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.ticket_saved), Toast.LENGTH_SHORT).show()
         }
 
         finish()
@@ -207,20 +280,20 @@ class TicketEditActivity : AppCompatActivity() {
 
     private fun showDeleteConfirmation() {
         AlertDialog.Builder(this)
-            .setTitle("Видалити квиток")
-            .setMessage("Ви впевнені, що хочете видалити цей квиток?")
-            .setPositiveButton("Видалити") { _, _ ->
+            .setTitle(getString(R.string.delete_ticket))
+            .setMessage(getString(R.string.delete_ticket_confirmation))
+            .setPositiveButton(getString(R.string.delete)) { _, _ ->
                 ticketId?.let { id ->
                     TicketsRepository.removeTicket(id)
-                    Toast.makeText(this, "Квиток видалено", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.ticket_deleted), Toast.LENGTH_SHORT).show()
                     finish()
                 } ?: run {
                     // Якщо це новий квиток, просто закриваємо екран
-                    Toast.makeText(this, "Скасовано", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.cancelled), Toast.LENGTH_SHORT).show()
                     finish()
                 }
             }
-            .setNegativeButton("Скасувати", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
@@ -268,7 +341,9 @@ class TicketEditActivity : AppCompatActivity() {
     }
 
     private fun openTicketPdf() {
-        currentTicket?.let { ticket ->
+        val ticketToOpen = currentTicket ?: tempTicket
+
+        ticketToOpen?.let { ticket ->
             // Спочатку пробуємо відкрити збережену копію з внутрішнього сховища
             ticket.pdfFilePath?.let { filePath ->
                 val file = File(filePath)
@@ -307,93 +382,139 @@ class TicketEditActivity : AppCompatActivity() {
                     if (intent.resolveActivity(packageManager) != null) {
                         startActivity(intent)
                     } else {
-                        Toast.makeText(this, "Немає додатка для відкриття PDF", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.no_app_to_open_pdf), Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(this, "Помилка відкриття PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.pdf_open_error, e.message), Toast.LENGTH_SHORT).show()
                 }
             } ?: run {
-                Toast.makeText(this, "PDF файл не знайдено для цього квитка", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.pdf_not_found), Toast.LENGTH_SHORT).show()
             }
         } ?: run {
-            Toast.makeText(this, "PDF файл не знайдено для цього квитка", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.pdf_not_found), Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun selectReplacementPdf() {
-        // Показуємо діалог підтвердження заміни PDF
-        AlertDialog.Builder(this)
-            .setTitle("Замінити PDF файл")
-            .setMessage("Ви впевнені, що хочете замінити поточний PDF файл? Старий файл буде видалено.")
-            .setPositiveButton("Замінити") { _, _ ->
+        val ticketToModify = currentTicket ?: tempTicket
+
+        if (ticketToModify != null) {
+            // Для існуючих квитків - перевіряємо, чи є PDF файл
+            val hasPdf = !ticketToModify.pdfUri.isNullOrEmpty() ||
+                        (!ticketToModify.pdfFilePath.isNullOrEmpty() && File(ticketToModify.pdfFilePath).exists())
+
+            if (hasPdf) {
+                // Якщо PDF є, показуємо діалог підтвердження заміни
+                AlertDialog.Builder(this)
+                    .setTitle(getString(R.string.replace_pdf_file))
+                    .setMessage(getString(R.string.replace_pdf_confirmation))
+                    .setPositiveButton(getString(R.string.replace)) { _, _ ->
+                        selectReplacementPdfLauncher.launch("application/pdf")
+                    }
+                    .setNegativeButton(getString(R.string.cancel), null)
+                    .show()
+            } else {
+                // Якщо PDF немає, одразу відкриваємо селектор
                 selectReplacementPdfLauncher.launch("application/pdf")
             }
-            .setNegativeButton("Скасувати", null)
-            .show()
+        } else {
+            // Для нових квитків - одразу відкриваємо селектор для додавання PDF
+            selectReplacementPdfLauncher.launch("application/pdf")
+        }
     }
 
     private fun replacePdfFile(uri: Uri) {
-        currentTicket?.let { ticket ->
-            // Отримуємо назву нового PDF файлу
-            val newFileName = getFileNameFromUri(uri)
+        // Отримуємо назву нового PDF файлу
+        val newFileName = getFileNameFromUri(uri)
 
-            if (newFileName != null) {
-                // Перевіряємо, чи новий PDF файл не використовується в інших квитках
-                val allTickets = TicketsRepository.getAllTickets()
-                val duplicateTicket = allTickets.find { otherTicket ->
-                    // Пропускаємо поточний квиток при перевірці
-                    if (otherTicket.id == ticket.id) return@find false
+        if (newFileName != null) {
+            // Перевіряємо, чи новий PDF файл не використовується в інших квитках
+            val allTickets = TicketsRepository.getAllTickets()
+            val duplicateTicket = allTickets.find { otherTicket ->
+                // Пропускаємо поточний квиток при перевірці (якщо він існує)
+                if (currentTicket != null && otherTicket.id == currentTicket!!.id) return@find false
 
-                    // Перевіряємо назву файлу з pdfFilePath або pdfUri
-                    val existingFileName = otherTicket.pdfFilePath?.let { File(it).name }
-                        ?: otherTicket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                // Перевіряємо назву файлу з pdfFilePath або pdfUri
+                val existingFileName = otherTicket.pdfFilePath?.let { File(it).name }
+                    ?: otherTicket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
 
-                    existingFileName != null && existingFileName == newFileName
-                }
+                existingFileName != null && existingFileName == newFileName
+            }
 
-                if (duplicateTicket != null) {
-                    Toast.makeText(
-                        this,
-                        "Цей PDF файл вже використовується в квитку \"${duplicateTicket.title}\". Оберіть інший файл.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    // Повторно відкриваємо селектор
-                    selectReplacementPdfLauncher.launch("application/pdf")
-                    return
+            if (duplicateTicket != null) {
+                Toast.makeText(
+                    this,
+                    getString(R.string.pdf_already_used, duplicateTicket.title),
+                    Toast.LENGTH_LONG
+                ).show()
+                // Повторно відкриваємо селектор
+                selectReplacementPdfLauncher.launch("application/pdf")
+                return
+            }
+        }
+
+        try {
+            // Видаляємо старий файл з внутрішнього сховища, якщо він існує
+            currentTicket?.pdfFilePath?.let { oldFilePath ->
+                val oldFile = File(oldFilePath)
+                if (oldFile.exists()) {
+                    oldFile.delete()
                 }
             }
 
-            try {
-                // Видаляємо старий файл з внутрішнього сховища, якщо він існує
-                ticket.pdfFilePath?.let { oldFilePath ->
-                    val oldFile = File(oldFilePath)
-                    if (oldFile.exists()) {
-                        oldFile.delete()
-                    }
-                }
+            // Зберігаємо новий PDF файл
+            val savedPdfPath = savePdfToInternalStorage(uri)
 
-                // Зберігаємо новий PDF файл
-                val savedPdfPath = savePdfToInternalStorage(uri)
-
-                // Оновлюємо квиток з новими даними
-                val updatedTicket = ticket.copy(
+            if (currentTicket != null) {
+                // Оновлюємо існуючий квиток
+                val updatedTicket = currentTicket!!.copy(
                     pdfUri = uri.toString(),
                     pdfFilePath = savedPdfPath
                 )
 
                 TicketsRepository.updateTicket(updatedTicket)
                 currentTicket = updatedTicket
+            } else {
+                // Створюємо новий квиток з PDF файлом
+                val title = editTitle.text.toString().trim().takeIf { it.isNotEmpty() }
+                    ?: getString(R.string.ticket_title_placeholder)
+                val venue = editVenue.text.toString().trim().takeIf { it.isNotEmpty() }
+                val eventDate = if (editDate.text.toString().trim().isNotEmpty()) {
+                    selectedDate.time
+                } else {
+                    null
+                }
 
-                // Активуємо кнопки PDF
-                buttonOpen.isEnabled = true
-                buttonOpen.alpha = 1.0f
-                buttonReplace.isEnabled = true
-                buttonReplace.alpha = 1.0f
+                val newTicket = Ticket(
+                    title = title,
+                    description = getString(R.string.manually_created_ticket),
+                    venue = venue,
+                    eventDate = eventDate,
+                    pdfUri = uri.toString(),
+                    pdfFilePath = savedPdfPath
+                )
 
-                Toast.makeText(this, "PDF файл замінено", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Toast.makeText(this, "Помилка заміни PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+                TicketsRepository.addTicket(newTicket)
+                currentTicket = newTicket
+
+                // Оновлюємо заголовок активності
+                supportActionBar?.title = getString(R.string.edit_ticket)
             }
+
+            // Активуємо кнопки PDF
+            buttonOpen.isEnabled = true
+            buttonOpen.alpha = 1.0f
+            buttonReplace.isEnabled = true
+            buttonReplace.alpha = 1.0f
+
+            val message = if (currentTicket?.id != null && TicketsRepository.getTicketById(currentTicket!!.id) != null) {
+                getString(R.string.pdf_file_replaced)
+            } else {
+                getString(R.string.ticket_saved_successfully)
+            }
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, getString(R.string.pdf_replacement_error, e.message), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -419,7 +540,7 @@ class TicketEditActivity : AppCompatActivity() {
                     if (duplicateTicket != null) {
                         Toast.makeText(
                             this,
-                            "Цей PDF файл вже використовується в квитку \"${duplicateTicket.title}\". Оберіть інший файл.",
+                            getString(R.string.pdf_already_used, duplicateTicket.title),
                             Toast.LENGTH_LONG
                         ).show()
                         // Повторно відкриваємо селектор
@@ -465,9 +586,9 @@ class TicketEditActivity : AppCompatActivity() {
                     // Оновлюємо поточний квиток для можливості перегляду PDF
                     currentTicket = newTicket
 
-                    Toast.makeText(this, "Копію квитка створено", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.ticket_copy_created), Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
-                    Toast.makeText(this, "Помилка збереження PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.pdf_save_error, e.message), Toast.LENGTH_SHORT).show()
                     e.printStackTrace()
                 }
             }
@@ -516,7 +637,149 @@ class TicketEditActivity : AppCompatActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
+        // Перевіряємо, чи були внесені зміни перед виходом
+        checkUnsavedChangesBeforeExit()
+        return false // Повертаємо false, щоб Android не обробляв навігацію автоматично
+    }
+
+    override fun onBackPressed() {
+        // Перевіряємо, чи були внесені зміни перед виходом
+        checkUnsavedChangesBeforeExit()
+    }
+
+    private fun checkUnsavedChangesBeforeExit() {
+        // Додаємо логування для діагностики
+        android.util.Log.d("TicketEditActivity", "checkUnsavedChangesBeforeExit called")
+        android.util.Log.d("TicketEditActivity", "tempTicket: ${tempTicket?.id}, currentTicket: ${currentTicket?.id}")
+
+        // Перевіряємо, чи були внесені зміни
+        val hasChanges = hasUnsavedChanges()
+        android.util.Log.d("TicketEditActivity", "hasUnsavedChanges: $hasChanges")
+
+        if (hasChanges) {
+            // Показуємо діалог підтвердження
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.unsaved_changes))
+                .setMessage(getString(R.string.unsaved_changes_message))
+                .setPositiveButton(getString(R.string.save)) { _, _ ->
+                    android.util.Log.d("TicketEditActivity", "User chose to save changes")
+                    saveTicket()
+                }
+                .setNegativeButton(getString(R.string.discard)) { _, _ ->
+                    android.util.Log.d("TicketEditActivity", "User chose to discard changes")
+                    // Видаляємо тимчасовий квиток якщо він існує
+                    cleanupTempTicket()
+                    // Закриваємо активність
+                    finish()
+                }
+                .setNeutralButton(getString(R.string.cancel)) { _, _ ->
+                    android.util.Log.d("TicketEditActivity", "User chose to cancel")
+                }
+                .show()
+        } else {
+            android.util.Log.d("TicketEditActivity", "No unsaved changes, closing activity")
+            // Якщо змін немає, просто закриваємо
+            cleanupTempTicket()
+            finish()
+        }
+    }
+
+    private fun hasUnsavedChanges(): Boolean {
+        val currentTitle = editTitle.text.toString().trim()
+        val currentVenue = editVenue.text.toString().trim()
+        val currentDateText = editDate.text.toString().trim()
+
+        android.util.Log.d("TicketEditActivity", "hasUnsavedChanges - currentTitle: '$currentTitle'")
+        android.util.Log.d("TicketEditActivity", "hasUnsavedChanges - currentVenue: '$currentVenue'")
+        android.util.Log.d("TicketEditActivity", "hasUnsavedChanges - currentDateText: '$currentDateText'")
+
+        return when {
+            // Для тимчасового квитка з PDF - завжди показуємо діалог, оскільки квиток ще не збережено
+            tempTicket != null -> {
+                android.util.Log.d("TicketEditActivity", "tempTicket - always has changes (not saved yet)")
+                true // Завжди true для тимчасових квитків
+            }
+            // Для нового квитка - є зміни якщо заповнені поля
+            currentTicket == null -> {
+                val hasChanges = currentTitle.isNotEmpty() || currentVenue.isNotEmpty() || currentDateText.isNotEmpty()
+                android.util.Log.d("TicketEditActivity", "newTicket - hasChanges: $hasChanges")
+                hasChanges
+            }
+            // Для існуючого квитка - порівнюємо з оригінальними значеннями
+            else -> {
+                val originalTitle = currentTicket?.title ?: ""
+                val originalVenue = currentTicket?.venue ?: ""
+                val originalDate = currentTicket?.eventDate?.let {
+                    SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(it)
+                } ?: ""
+
+                android.util.Log.d("TicketEditActivity", "existingTicket - originalTitle: '$originalTitle'")
+                android.util.Log.d("TicketEditActivity", "existingTicket - originalVenue: '$originalVenue'")
+                android.util.Log.d("TicketEditActivity", "existingTicket - originalDate: '$originalDate'")
+
+                val hasChanges = currentTitle != originalTitle ||
+                currentVenue != originalVenue ||
+                currentDateText != originalDate
+
+                android.util.Log.d("TicketEditActivity", "existingTicket - hasChanges: $hasChanges")
+                hasChanges
+            }
+        }
+    }
+
+    private fun cleanupTempTicket() {
+        // Видаляємо тимчасовий PDF файл якщо він існує
+        tempTicket?.pdfFilePath?.let { filePath ->
+            try {
+                val file = File(filePath)
+                if (file.exists()) {
+                    file.delete()
+                }
+            } catch (e: Exception) {
+                // Ігноруємо помилки при видаленні тимчасового файлу
+            }
+        }
+    }
+
+    private fun saveTicketWithDefaultTitle() {
+        val venue = editVenue.text.toString().trim().takeIf { it.isNotEmpty() }
+        val eventDate = if (editDate.text.toString().trim().isNotEmpty()) {
+            selectedDate.time
+        } else {
+            null
+        }
+
+        // Створюємо автоматичну назву на основі дати або просто "Новий квиток"
+        val autoTitle = if (eventDate != null) {
+            val format = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
+            "${getString(R.string.event_on)} ${format.format(eventDate)}"
+        } else {
+            getString(R.string.new_event)
+        }
+
+        val ticket = if (currentTicket != null) {
+            currentTicket!!.copy(
+                title = autoTitle,
+                venue = venue,
+                eventDate = eventDate
+            )
+        } else {
+            com.tixly.app.data.Ticket(
+                title = autoTitle,
+                description = getString(R.string.manually_created_ticket),
+                venue = venue,
+                eventDate = eventDate
+            )
+        }
+
+        if (currentTicket != null) {
+            com.tixly.app.data.TicketsRepository.updateTicket(ticket)
+            Toast.makeText(this, getString(R.string.ticket_updated), Toast.LENGTH_SHORT).show()
+        } else {
+            com.tixly.app.data.TicketsRepository.addTicket(ticket)
+            Toast.makeText(this, getString(R.string.ticket_saved), Toast.LENGTH_SHORT).show()
+        }
+
         finish()
-        return true
     }
 }
