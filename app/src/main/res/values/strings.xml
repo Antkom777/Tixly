@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tixly</string>
+
+    <!-- MainActivity -->
+    <string name="main_title">Tixly</string>
+    <string name="main_subtitle">Ваш помічник для управління квитками</string>
+    <string name="button_add_ticket">Додати квиток з PDF</string>
+    <string name="button_view_tickets">Переглянути квитки</string>
+    <string name="button_exit">Вихід</string>
+
+    <!-- TicketsActivity -->
+    <string name="tickets_title">Мої квитки</string>
+    <string name="no_tickets">Немає збережених квитків</string>
+    <string name="ticket_deleted">Квиток видалено</string>
+
+    <!-- TicketEditActivity -->
+    <string name="edit_ticket_title">Редагувати квиток</string>
+    <string name="new_ticket_title">Новий квиток</string>
+    <string name="hint_ticket_title">Назва квитка</string>
+    <string name="hint_ticket_description">Опис</string>
+    <string name="hint_ticket_venue">Місце проведення</string>
+    <string name="hint_ticket_price">Ціна</string>
+    <string name="hint_ticket_seat">Інформація про місця</string>
+    <string name="hint_ticket_date">Дата події (дд.мм.рррр гг:хх)</string>
+    <string name="button_save">Зберегти</string>
+    <string name="button_delete">Видалити квиток</string>
+    <string name="button_add_to_calendar">Додати в календар</string>
+
+    <!-- Messages -->
+    <string name="processing">Обробка PDF файлу...</string>
+    <string name="ticket_saved">Квиток успішно збережено!</string>
+    <string name="ticket_updated">Квиток оновлено</string>
+    <string name="pdf_shared">PDF файл отримано через Share</string>
+    <string name="pdf_opened">PDF файл відкрито в додатку</string>
+    <string name="pdf_error">Не вдалося обробити PDF файл</string>
+    <string name="processing_error">Помилка при обробці PDF: %1$s</string>
+    <string name="enter_title">Введіть назву квитка</string>
+    <string name="calendar_added">Подію додано в календар</string>
+    <string name="calendar_error">Не вдалося додати в календар</string>
+    <string name="calendar_permission_denied">Дозвіл на календар відхилено</string>
+    <string name="calendar_need_date">Для додавання в календар потрібна дата події</string>
+
+    <!-- Dialog messages -->
+    <string name="ticket_created_title">Квиток збережено</string>
+    <string name="ticket_created_message">Квиток створено!\n\nНазва: %1$s\nМісце: %2$s\nДата: %3$s\nЦіна: %4$s\nМісця: %5$s</string>
+    <string name="delete_confirmation_title">Видалити квиток</string>
+    <string name="delete_confirmation_message">Ви впевнені, що хочете видалити цей квиток?</string>
+    <string name="view_all_tickets">Переглянути всі квитки</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Скасувати</string>
+
+    <!-- Ticket fields -->
+    <string name="date_not_specified">Дата не вказана</string>
+    <string name="venue_not_specified">Місце не вказано</string>
+    <string name="price_not_specified">Ціна не вказана</string>
+</resources>

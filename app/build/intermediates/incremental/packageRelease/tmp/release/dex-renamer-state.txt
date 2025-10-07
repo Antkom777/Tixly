@@ -1,0 +1,4 @@
+#Fri Oct 03 09:42:58 GMT+02:00 2025
+base.0=/home/akomarovskyi/Project/pdf2pass_app/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

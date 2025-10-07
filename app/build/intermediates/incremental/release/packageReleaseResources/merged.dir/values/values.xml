@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <color name="black">#FF000000</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="app_name">Tixly</string>
+    <string name="button_add_ticket">Додати квиток з PDF</string>
+    <string name="button_add_to_calendar">Додати в календар</string>
+    <string name="button_delete">Видалити квиток</string>
+    <string name="button_exit">Вихід</string>
+    <string name="button_save">Зберегти</string>
+    <string name="button_view_tickets">Переглянути квитки</string>
+    <string name="calendar_added">Подію додано в календар</string>
+    <string name="calendar_error">Не вдалося додати в календар</string>
+    <string name="calendar_need_date">Для додавання в календар потрібна дата події</string>
+    <string name="calendar_permission_denied">Дозвіл на календар відхилено</string>
+    <string name="cancel">Скасувати</string>
+    <string name="date_not_specified">Дата не вказана</string>
+    <string name="delete_confirmation_message">Ви впевнені, що хочете видалити цей квиток?</string>
+    <string name="delete_confirmation_title">Видалити квиток</string>
+    <string name="edit_ticket_title">Редагувати квиток</string>
+    <string name="enter_title">Введіть назву квитка</string>
+    <string name="hint_ticket_date">Дата події (дд.мм.рррр гг:хх)</string>
+    <string name="hint_ticket_description">Опис</string>
+    <string name="hint_ticket_price">Ціна</string>
+    <string name="hint_ticket_seat">Інформація про місця</string>
+    <string name="hint_ticket_title">Назва квитка</string>
+    <string name="hint_ticket_venue">Місце проведення</string>
+    <string name="main_subtitle">Ваш помічник для управління квитками</string>
+    <string name="main_title">Tixly</string>
+    <string name="new_ticket_title">Новий квиток</string>
+    <string name="no_tickets">Немає збережених квитків</string>
+    <string name="ok">OK</string>
+    <string name="pdf_error">Не вдалося обробити PDF файл</string>
+    <string name="pdf_opened">PDF файл відкрито в додатку</string>
+    <string name="pdf_shared">PDF файл отримано через Share</string>
+    <string name="price_not_specified">Ціна не вказана</string>
+    <string name="processing">Обробка PDF файлу...</string>
+    <string name="processing_error">Помилка при обробці PDF: %1$s</string>
+    <string name="ticket_created_message">Квиток створено!\n\nНазва: %1$s\nМісце: %2$s\nДата: %3$s\nЦіна: %4$s\nМісця: %5$s</string>
+    <string name="ticket_created_title">Квиток збережено</string>
+    <string name="ticket_deleted">Квиток видалено</string>
+    <string name="ticket_saved">Квиток успішно збережено!</string>
+    <string name="ticket_updated">Квиток оновлено</string>
+    <string name="tickets_title">Мої квитки</string>
+    <string name="venue_not_specified">Місце не вказано</string>
+    <string name="view_all_tickets">Переглянути всі квитки</string>
+    <style name="Theme.HelloWorld" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+        
+        <item name="colorSecondary">@color/teal_200</item>
+        <item name="colorSecondaryVariant">@color/teal_700</item>
+        <item name="colorOnSecondary">@color/black</item>
+        
+        <item name="android:statusBarColor" ns1:targetApi="l">?attr/colorPrimaryVariant</item>
+        
+    </style>
+</resources>

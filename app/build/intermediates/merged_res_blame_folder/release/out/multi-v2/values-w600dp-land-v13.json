@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.tixly.app-mergeReleaseResources-34:/values-w600dp-land-v13/values-w600dp-land-v13.xml",
+            "map": [
+                {
+                    "source": "/home/akomarovskyi/.gradle/caches/transforms-3/b0372a3e5728a6593b4482ebb1745236/transformed/material-1.11.0/res/values-w600dp-land-v13/values-w600dp-land-v13.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "54",
+                        "endOffsets": "105"
+                    }
+                }
+            ]
+        }
+    ]
+}

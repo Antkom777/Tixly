@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:hint="Подія">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editTicketTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:hint="Місце проведення">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editTicketVenue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:hint="Дата та час (натисніть для вибору)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editTicketDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="true"
+                android:drawableEnd="@android:drawable/ic_menu_my_calendar"
+                android:drawablePadding="8dp" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Панель з іконками для дій -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="24dp">
+
+            <ImageButton
+                android:id="@+id/buttonSaveTicket"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_margin="8dp"
+                android:src="@android:drawable/ic_menu_save"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Зберегти"
+                android:scaleType="fitCenter"
+                android:padding="12dp" />
+
+            <ImageButton
+                android:id="@+id/buttonOpenTicket"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_margin="8dp"
+                android:src="@android:drawable/ic_menu_view"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Відкрити PDF"
+                android:scaleType="fitCenter"
+                android:padding="12dp" />
+
+            <ImageButton
+                android:id="@+id/buttonReplacePdf"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_margin="8dp"
+                android:src="@android:drawable/ic_menu_rotate"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Замінити PDF"
+                android:scaleType="fitCenter"
+                android:padding="12dp" />
+
+            <ImageButton
+                android:id="@+id/buttonDeleteTicket"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_margin="8dp"
+                android:src="@android:drawable/ic_menu_delete"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Видалити квиток"
+                android:scaleType="fitCenter"
+                android:padding="12dp" />
+
+        </LinearLayout>
+
+        <!-- Підписи під іконками -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Зберегти"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:textColor="@android:color/darker_gray" />
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Відкрити PDF"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:textColor="@android:color/darker_gray" />
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Замінити PDF"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:textColor="@android:color/darker_gray" />
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Видалити"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:textColor="@android:color/darker_gray" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>
