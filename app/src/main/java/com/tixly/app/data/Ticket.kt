@@ -16,7 +16,7 @@ data class Ticket(
     val barcode: String? = null,
     val createdDate: Date = Date(),
     val pdfFilePath: String? = null,
-    val pdfUri: String? = null // Додаємо URI для відкриття PDF
+    val pdfUri: String? = null // Add URI for opening PDF
 ) {
     fun getFormattedEventDate(): String {
         return eventDate?.let {

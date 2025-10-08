@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.tixly.app.data.Ticket
 import com.tixly.app.data.TicketsRepository
+import com.tixly.app.utils.NotificationScheduler
 import com.tixly.app.utils.PDFProcessor
 import com.tixly.app.utils.SettingsManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -69,6 +70,9 @@ class TicketsActivity : BaseActivity() {
         setupRecyclerView()
         setupFab()
         loadTickets()
+
+        // Initialize notifications if enabled
+        initializeNotifications()
 
         // Handle Intent if app is launched via Share or View
         handleIncomingIntent(intent)
@@ -429,6 +433,18 @@ class TicketsActivity : BaseActivity() {
 
         if (sortedTickets.isEmpty()) {
             Toast.makeText(this, getString(R.string.no_saved_tickets), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun initializeNotifications() {
+        // Initialize notifications for all upcoming tickets if enabled
+        if (settingsManager.getNotificationsEnabled()) {
+            val notificationTime = settingsManager.getNotificationTime()
+            val upcomingTickets = TicketsRepository.getUpcomingTickets()
+
+            android.util.Log.d("TicketsActivity", "Initializing notifications for ${upcomingTickets.size} upcoming tickets")
+
+            NotificationScheduler.rescheduleAllNotifications(this, upcomingTickets, notificationTime)
         }
     }
 }

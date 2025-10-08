@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
 import com.tixly.app.utils.SettingsManager
+import com.tixly.app.utils.NotificationHelper
 import java.util.*
 
 class TixlyApplication : Application() {
@@ -12,6 +13,9 @@ class TixlyApplication : Application() {
         super.onCreate()
         // Apply saved language setting on app startup
         applySavedLanguage()
+
+        // Initialize notification channels
+        NotificationHelper.createNotificationChannel(this)
     }
 
     override fun attachBaseContext(base: Context) {

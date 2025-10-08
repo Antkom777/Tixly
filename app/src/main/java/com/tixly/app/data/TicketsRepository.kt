@@ -149,11 +149,29 @@ object TicketsRepository {
     }
 
     fun getUpcomingTickets(): List<Ticket> {
-        return tickets.filter { it.isUpcoming() }
+        val currentTime = Date()
+        return tickets.filter { ticket ->
+            ticket.eventDate?.after(currentTime) == true
+        }
     }
 
     fun getPastTickets(): List<Ticket> {
         return tickets.filter { !it.isUpcoming() }
+    }
+
+    fun createTestTicket(): Ticket {
+        // Create a test ticket with event time 5 seconds from now
+        val testEventTime = Calendar.getInstance().apply {
+            add(Calendar.SECOND, 5)
+        }.time
+
+        return Ticket(
+            id = "test_${System.currentTimeMillis()}",
+            title = context?.getString(R.string.test_notification_title) ?: "Test Event",
+            description = "Test notification event",
+            venue = context?.getString(R.string.test_notification_text) ?: "Test Venue",
+            eventDate = testEventTime
+        )
     }
 
     private fun initializeWithSampleTickets() {

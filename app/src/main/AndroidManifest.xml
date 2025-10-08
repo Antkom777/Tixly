@@ -21,6 +21,14 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
+    <!-- Notification permissions -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!-- Alarm permissions for precise scheduling -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <application
         android:name=".TixlyApplication"
         android:allowBackup="true"
@@ -91,6 +99,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Notification receiver for event reminders -->
+        <receiver
+            android:name=".utils.NotificationReceiver"
+            android:exported="false" />
 
     </application>
 

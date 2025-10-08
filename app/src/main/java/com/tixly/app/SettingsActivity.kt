@@ -1,11 +1,19 @@
 package com.tixly.app
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import com.tixly.app.data.TicketsRepository
+import com.tixly.app.utils.NotificationHelper
+import com.tixly.app.utils.NotificationScheduler
 import com.tixly.app.utils.SettingsManager
 import java.util.*
 
@@ -19,6 +27,25 @@ class SettingsActivity : BaseActivity() {
     private lateinit var textNotificationTime: TextView
     private lateinit var spinnerNotificationTime: Spinner
     private lateinit var buttonRemoveAds: Button
+
+    // Notification permission launcher for Android 13+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            android.util.Log.d("SettingsActivity", "Notification permission granted")
+            // Now enable notifications and schedule them
+            settingsManager.setNotificationsEnabled(true)
+            updateNotificationTimeVisibility(true)
+            com.tixly.app.utils.NotificationManager.onNotificationsEnabledChanged(this, true)
+        } else {
+            android.util.Log.d("SettingsActivity", "Notification permission denied")
+            // Disable notifications if permission was denied
+            switchNotifications.isChecked = false
+            settingsManager.setNotificationsEnabled(false)
+            updateNotificationTimeVisibility(false)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,18 +103,50 @@ class SettingsActivity : BaseActivity() {
             if (newLanguage != settingsManager.getLanguage()) {
                 settingsManager.setLanguage(newLanguage)
 
-                // Перезавантажуємо активність для застосування нової мови
+                // Reload activity to apply new language
                 recreate()
 
-                // Встановлюємо результат, щоб попередня активність знала про зміну мови
+                // Set result so previous activity knows about language change
                 setResult(RESULT_OK)
             }
         }
 
         // Notifications enable/disable handler
         switchNotifications.setOnCheckedChangeListener { _, isChecked ->
-            settingsManager.setNotificationsEnabled(isChecked)
-            updateNotificationTimeVisibility(isChecked)
+            android.util.Log.d("SettingsActivity", "=== Notification setting changed ===")
+
+            if (isChecked) {
+                // When enabling notifications, request permission first if needed
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    when {
+                        ContextCompat.checkSelfPermission(
+                            this,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED -> {
+                            // Permission already granted, proceed with enabling
+                            android.util.Log.d("SettingsActivity", "Notification permission already granted")
+                            settingsManager.setNotificationsEnabled(true)
+                            updateNotificationTimeVisibility(true)
+                            com.tixly.app.utils.NotificationManager.onNotificationsEnabledChanged(this, true)
+                        }
+                        else -> {
+                            // Request the permission
+                            android.util.Log.d("SettingsActivity", "Requesting notification permission")
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                } else {
+                    // No permission needed for older Android versions
+                    settingsManager.setNotificationsEnabled(true)
+                    updateNotificationTimeVisibility(true)
+                    com.tixly.app.utils.NotificationManager.onNotificationsEnabledChanged(this, true)
+                }
+            } else {
+                // When disabling notifications, no permission needed
+                settingsManager.setNotificationsEnabled(false)
+                updateNotificationTimeVisibility(false)
+                com.tixly.app.utils.NotificationManager.onNotificationsEnabledChanged(this, false)
+            }
         }
 
         // Reminder time change handler
@@ -101,7 +160,16 @@ class SettingsActivity : BaseActivity() {
                     4 -> SettingsManager.NOTIFICATION_1_WEEK
                     else -> SettingsManager.NOTIFICATION_1_DAY
                 }
-                settingsManager.setNotificationTime(timeInHours)
+
+                // Only reschedule if the value actually changed
+                val currentNotificationTime = settingsManager.getNotificationTime()
+                if (timeInHours != currentNotificationTime) {
+                    settingsManager.setNotificationTime(timeInHours)
+
+                    // Use the new centralized notification manager
+                    android.util.Log.d("SettingsActivity", "=== Notification time change ===")
+                    com.tixly.app.utils.NotificationManager.onNotificationTimeChanged(this@SettingsActivity, timeInHours)
+                }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -170,6 +238,44 @@ class SettingsActivity : BaseActivity() {
 
         val context = createConfigurationContext(config)
         resources.updateConfiguration(config, resources.displayMetrics)
+    }
+
+    // Schedule notifications based on current settings
+    private fun scheduleNotifications() {
+        if (!settingsManager.getNotificationsEnabled()) return
+
+        val notificationTime = settingsManager.getNotificationTime()
+        TicketsRepository.initialize(this)
+        val tickets = TicketsRepository.getUpcomingTickets()
+
+        android.util.Log.d("SettingsActivity", "Scheduling notifications for ${tickets.size} upcoming tickets")
+
+        NotificationScheduler.rescheduleAllNotifications(this, tickets, notificationTime)
+    }
+
+    // Cancel all scheduled notifications
+    private fun cancelScheduledNotifications() {
+        TicketsRepository.initialize(this)
+        val tickets = TicketsRepository.getAllTickets()
+
+        android.util.Log.d("SettingsActivity", "Cancelling notifications for ${tickets.size} tickets")
+
+        tickets.forEach { ticket ->
+            NotificationScheduler.cancelEventReminder(this, ticket.id)
+        }
+    }
+
+    // Reschedule notifications, e.g., after changing the notification time
+    private fun rescheduleNotifications() {
+        if (!settingsManager.getNotificationsEnabled()) return
+
+        val notificationTime = settingsManager.getNotificationTime()
+        TicketsRepository.initialize(this)
+        val tickets = TicketsRepository.getUpcomingTickets()
+
+        android.util.Log.d("SettingsActivity", "Rescheduling notifications for ${tickets.size} upcoming tickets")
+
+        NotificationScheduler.rescheduleAllNotifications(this, tickets, notificationTime)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

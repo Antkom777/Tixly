@@ -12,6 +12,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import com.tixly.app.data.Ticket
 import com.tixly.app.data.TicketsRepository
+import com.tixly.app.utils.NotificationScheduler
+import com.tixly.app.utils.SettingsManager
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -322,6 +324,10 @@ class TicketEditActivity : BaseActivity() {
         }
 
         if (wasSuccessful) {
+            // Use the new centralized notification manager
+            android.util.Log.d("TicketEditActivity", "=== Notification recalculation ===")
+            com.tixly.app.utils.NotificationManager.recalculateNotificationForTicket(this, ticketToSave)
+
             // Clear temporary data
             tempTicket = null
             finish()
@@ -334,6 +340,9 @@ class TicketEditActivity : BaseActivity() {
             .setMessage(getString(R.string.delete_ticket_confirmation))
             .setPositiveButton(getString(R.string.delete)) { _, _ ->
                 ticketId?.let { id ->
+                    // Use the new centralized notification manager
+                    com.tixly.app.utils.NotificationManager.onTicketDeleted(this, id)
+
                     TicketsRepository.removeTicket(id)
                     Toast.makeText(this, getString(R.string.ticket_deleted), Toast.LENGTH_SHORT).show()
                     finish()

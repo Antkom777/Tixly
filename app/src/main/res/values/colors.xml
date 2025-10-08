@@ -4,6 +4,9 @@
     <color name="pale_green">#C8E6C9</color>
     <color name="pale_green_pressed">#A5D6A7</color>
 
+    <!-- Orange color for test notification button -->
+    <color name="orange">#FF9800</color>
+
     <!-- Standard Material Design colors -->
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>

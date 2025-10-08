@@ -99,7 +99,19 @@
     <!-- Sample ticket strings (used in TicketsRepository) -->
     <string name="sample_ticket_1_title">Концерт рок-групи</string>
     <string name="sample_ticket_1_venue">Палац спорту</string>
-
     <string name="sample_ticket_2_title">Театральна вистава</string>
     <string name="sample_ticket_2_venue">Національний театр</string>
+
+    <!-- Notification strings -->
+    <string name="event_reminder_title">Нагадування про подію</string>
+    <string name="event_reminder_text">%1$s у %2$s незабаром почнеться!</string>
+    <string name="notification_permission_title">Дозвіл на сповіщення</string>
+    <string name="notification_permission_message">Дозвольте сповіщення, щоб отримувати нагадування про ваші події</string>
+    <string name="grant_permission">Дозволити</string>
+    <string name="test_notification">Тестове сповіщення</string>
+    <string name="test_notification_title">Тест сповіщень Tixly</string>
+    <string name="test_notification_text">Сповіщення працюють правильно!</string>
+    <string name="test_scheduled_notification">Тест планувальника (10 сек)</string>
+    <string name="notifications_disabled">Спочатку увімкніть сповіщення</string>
+
 </resources>

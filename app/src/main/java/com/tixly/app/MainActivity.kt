@@ -15,7 +15,7 @@ class MainActivity : BaseActivity() {
 
     private lateinit var pdfProcessor: PDFProcessor
 
-    // Launcher для вибору PDF файлу
+    // Launcher for selecting PDF file
     private val selectPdfLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -27,15 +27,15 @@ class MainActivity : BaseActivity() {
 
         pdfProcessor = PDFProcessor(this)
 
-        // Ініціалізуємо репозиторій з контекстом
+        // Initialize repository with context
         TicketsRepository.initialize(this)
 
-        // Обробляємо Intent якщо додаток запущено через Share або View
+        // Process Intent if app is launched via Share or View
         if (handleIncomingIntent(intent)) {
-            return // Якщо обробили PDF, не показуємо головний екран
+            return // If processed PDF, don't show main screen
         }
 
-        // Одразу переходимо до екрану зі списком квитків
+        // Go directly to tickets list screen
         val intent = Intent(this, TicketsActivity::class.java)
         startActivity(intent)
         finish()
@@ -52,18 +52,18 @@ class MainActivity : BaseActivity() {
         val buttonExit = findViewById<Button>(R.id.buttonExit)
 
         buttonAddTicket.setOnClickListener {
-            // Відкриваємо файловий менеджер для вибору PDF
+            // Open file manager for PDF selection
             selectPdfLauncher.launch("application/pdf")
         }
 
         buttonViewTickets.setOnClickListener {
-            // Переходимо до екрану зі списком тікетів
+            // Go to tickets list screen
             val intent = Intent(this, TicketsActivity::class.java)
             startActivity(intent)
         }
 
         buttonExit.setOnClickListener {
-            // Закриваємо додаток
+            // Close app
             finishAffinity()
             exitProcess(0)
         }
@@ -105,17 +105,17 @@ class MainActivity : BaseActivity() {
         try {
             val ticket = pdfProcessor.processPDF(uri)
             if (ticket != null) {
-                // НЕ додаємо тікет до репозиторію одразу - передаємо його в редактор
-                // Показуємо повідомлення про успішну обробку PDF, а не про збереження квитка
+                // DO NOT add ticket to repository immediately - pass it to editor
+                // Show message about successful PDF processing, not about saving ticket
                 Toast.makeText(this, getString(R.string.pdf_processed_successfully), Toast.LENGTH_LONG).show()
 
-                // Відкриваємо екран редагування з тимчасовим квитком
+                // Open editing screen with temporary ticket
                 val intent = Intent(this, TicketEditActivity::class.java)
-                intent.putExtra("TEMP_TICKET_DATA", ticket.toJson()) // Передаємо як JSON
+                intent.putExtra("TEMP_TICKET_DATA", ticket.toJson()) // Pass as JSON
                 startActivity(intent)
-                // НЕ викликаємо finish() - залишаємо MainActivity в стеку для правильної навігації назад
+                // DO NOT call finish() - leave MainActivity in stack for proper back navigation
             } else {
-                // Перевіряємо, чи це через дублювання PDF
+                // Check if this is due to PDF duplication
                 val fileName = getFileNameFromUri(uri)
                 if (fileName != null) {
                     val allTickets = TicketsRepository.getAllTickets()
@@ -131,7 +131,7 @@ class MainActivity : BaseActivity() {
                             getString(R.string.pdf_already_used, duplicateTicket.title),
                             Toast.LENGTH_LONG
                         ).show()
-                        // Переходимо до списку квитків
+                        // Go to tickets list
                         val intent = Intent(this, TicketsActivity::class.java)
                         startActivity(intent)
                         finish()
@@ -140,7 +140,7 @@ class MainActivity : BaseActivity() {
                 }
 
                 Toast.makeText(this, getString(R.string.failed_to_process_pdf), Toast.LENGTH_LONG).show()
-                // Переходимо до списку квитків
+                // Go to tickets list
                 val intent = Intent(this, TicketsActivity::class.java)
                 startActivity(intent)
                 finish()
