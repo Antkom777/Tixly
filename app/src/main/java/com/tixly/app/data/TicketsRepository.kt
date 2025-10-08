@@ -98,10 +98,53 @@ object TicketsRepository {
     }
 
     fun updateTicket(updatedTicket: Ticket) {
+        android.util.Log.d("TicketsRepository", "=== Updating ticket ===")
+        android.util.Log.d("TicketsRepository", "Ticket ID: ${updatedTicket.id}")
+        android.util.Log.d("TicketsRepository", "Title: ${updatedTicket.title}")
+        android.util.Log.d("TicketsRepository", "PDF file path: ${updatedTicket.pdfFilePath}")
+        android.util.Log.d("TicketsRepository", "PDF URI: ${updatedTicket.pdfUri}")
+
         val index = tickets.indexOfFirst { it.id == updatedTicket.id }
+        android.util.Log.d("TicketsRepository", "Found ticket at index: $index")
+
         if (index != -1) {
-            tickets[index] = updatedTicket
+            val oldTicket = tickets[index]
+            android.util.Log.d("TicketsRepository", "Old PDF path: ${oldTicket.pdfFilePath}")
+            android.util.Log.d("TicketsRepository", "New PDF path: ${updatedTicket.pdfFilePath}")
+
+            // Verify that the new PDF file actually exists before updating
+            updatedTicket.pdfFilePath?.let { newPath ->
+                val file = java.io.File(newPath)
+                if (!file.exists()) {
+                    android.util.Log.e("TicketsRepository", "ERROR: New PDF file does not exist at: $newPath")
+                    android.util.Log.e("TicketsRepository", "File exists check: ${file.exists()}")
+                    android.util.Log.e("TicketsRepository", "File absolute path: ${file.absolutePath}")
+                    android.util.Log.e("TicketsRepository", "Parent directory exists: ${file.parentFile?.exists()}")
+                } else {
+                    android.util.Log.d("TicketsRepository", "New PDF file verified: $newPath (${file.length()} bytes)")
+                }
+            }
+
+            // Clear the old URI when updating with a new file path
+            val finalTicket = if (updatedTicket.pdfFilePath != oldTicket.pdfFilePath && !updatedTicket.pdfFilePath.isNullOrEmpty()) {
+                android.util.Log.d("TicketsRepository", "Clearing old URI - new file saved internally")
+                updatedTicket.copy(pdfUri = null)
+            } else {
+                updatedTicket
+            }
+
+            tickets[index] = finalTicket
             saveTickets()
+
+            // Verify the save was successful by reloading
+            val verifyTicket = tickets.find { it.id == finalTicket.id }
+            android.util.Log.d("TicketsRepository", "Post-save verification:")
+            android.util.Log.d("TicketsRepository", "  Saved PDF path: ${verifyTicket?.pdfFilePath}")
+            android.util.Log.d("TicketsRepository", "  Saved PDF URI: ${verifyTicket?.pdfUri}")
+
+            android.util.Log.d("TicketsRepository", "Ticket updated and saved successfully")
+        } else {
+            android.util.Log.w("TicketsRepository", "Ticket with ID ${updatedTicket.id} not found for update")
         }
     }
 

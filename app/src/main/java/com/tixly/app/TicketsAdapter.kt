@@ -44,7 +44,7 @@ class TicketsAdapter(
         private val buttonOpen: ImageButton = itemView.findViewById(R.id.buttonOpenTicket)
 
         fun bind(ticket: Ticket) {
-            // Захищаємо від порожніх назв квитків
+            // Protect against empty ticket titles
             textTitle.text = if (ticket.title.isBlank()) {
                 itemView.context.getString(R.string.ticket_title_placeholder)
             } else {
@@ -58,9 +58,18 @@ class TicketsAdapter(
             }
             textVenue.text = ticket.venue ?: itemView.context.getString(R.string.venue_not_specified)
 
-            // Check if there's an attached PDF file
-            val hasPdf = (!ticket.pdfUri.isNullOrEmpty()) ||
-                         (!ticket.pdfFilePath.isNullOrEmpty() && File(ticket.pdfFilePath).exists())
+            // Check if there's an attached PDF file - FIX: adding detailed check
+            val hasPdf = when {
+                // First check saved file
+                !ticket.pdfFilePath.isNullOrEmpty() -> {
+                    val file = File(ticket.pdfFilePath)
+                    file.exists()
+                }
+                // Then check original URI
+                !ticket.pdfUri.isNullOrEmpty() -> true
+                else -> false
+            }
+
             buttonOpen.isEnabled = hasPdf
             buttonOpen.alpha = if (hasPdf) 1.0f else 0.5f // Visually show inactive state
 

@@ -92,7 +92,7 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/pdf_change_transparent_32"
+                android:src="@android:drawable/ic_menu_rotate"
                 android:contentDescription="@string/replace_pdf_desc"
                 android:padding="12dp"
                 android:layout_weight="1" />

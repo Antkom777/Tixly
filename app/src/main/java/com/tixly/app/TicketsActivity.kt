@@ -44,7 +44,7 @@ class TicketsActivity : BaseActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            // Мова була змінена, перезавантажуємо активність
+            // Language was changed, recreate activity
             recreate()
         }
     }
@@ -59,7 +59,7 @@ class TicketsActivity : BaseActivity() {
         pdfProcessor = PDFProcessor(this)
         settingsManager = SettingsManager(this)
 
-        // Запам'ятовуємо поточну мову
+        // Remember current language
         currentLanguage = settingsManager.getLanguage()
 
         // Configure action bar
@@ -77,21 +77,21 @@ class TicketsActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
 
-        // Перевіряємо, чи змінилася мова
+        // Check if language has changed
         val newLanguage = settingsManager.getLanguage()
         if (newLanguage != currentLanguage) {
-            // Мова змінилася, перезавантажуємо активність
+            // Language changed, recreate activity
             recreate()
             return
         }
 
-        // Оновлюємо заголовок активності при поверненні (наприклад, після зміни мови)
+        // Update activity title when returning (e.g., after language change)
         supportActionBar?.title = getString(R.string.my_tickets)
         // Refresh ticket list when returning to activity
         loadTickets()
         // Update ad visibility when returning from settings
         updateAdBannerVisibility()
-        // Оновлюємо список квитків для відображення нової мови
+        // Update tickets list to display new language
         ticketsAdapter.notifyDataSetChanged()
     }
 
@@ -163,7 +163,7 @@ class TicketsActivity : BaseActivity() {
     private fun setupFab() {
         val fab = findViewById<FloatingActionButton>(R.id.fabAddTicket)
         fab.setOnClickListener {
-            // Показуємо діалог з вибором способу додавання квитка
+            // Show dialog to choose ticket addition method
             showAddTicketDialog()
         }
     }
@@ -177,11 +177,11 @@ class TicketsActivity : BaseActivity() {
             )) { _, which ->
                 when (which) {
                     0 -> {
-                        // Додати квиток з PDF файлу
+                        // Add ticket from PDF file
                         selectPdfLauncher.launch("application/pdf")
                     }
                     1 -> {
-                        // Створити квиток вручну
+                        // Create ticket manually
                         createManualTicket()
                     }
                 }
@@ -191,7 +191,7 @@ class TicketsActivity : BaseActivity() {
     }
 
     private fun createManualTicket() {
-        // Переходимо до екрану редагування нового квитка
+        // Navigate to new ticket editing screen
         val intent = Intent(this, TicketEditActivity::class.java)
         startActivity(intent)
     }
@@ -246,73 +246,57 @@ class TicketsActivity : BaseActivity() {
     }
 
     private fun openTicketPdf(ticket: Ticket) {
+        android.util.Log.d("TicketsActivity", "=== TicketsActivity Opening PDF Debug Info ===")
+        android.util.Log.d("TicketsActivity", "Opening PDF for ticket: ${ticket.id}")
+        android.util.Log.d("TicketsActivity", "Ticket title: ${ticket.title}")
+        android.util.Log.d("TicketsActivity", "PDF file path: ${ticket.pdfFilePath}")
+        android.util.Log.d("TicketsActivity", "PDF URI: ${ticket.pdfUri}")
+
         try {
-            // Always prioritize the internal file copy first
+            // First, try to open the saved copy from internal storage
             ticket.pdfFilePath?.let { filePath ->
                 val file = File(filePath)
-                if (file.exists() && file.canRead()) {
+                android.util.Log.d("TicketsActivity", "Checking file exists: ${file.exists()}")
+                android.util.Log.d("TicketsActivity", "File absolute path: ${file.absolutePath}")
+                android.util.Log.d("TicketsActivity", "File length: ${if (file.exists()) file.length() else "N/A"}")
+
+                if (file.exists()) {
                     try {
                         val uri = androidx.core.content.FileProvider.getUriForFile(
                             this,
                             "${packageName}.fileprovider",
                             file
                         )
+                        android.util.Log.d("TicketsActivity", "FileProvider URI: $uri")
 
                         val intent = Intent(Intent.ACTION_VIEW).apply {
                             setDataAndType(uri, "application/pdf")
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-
-                        // Grant permission to all apps that can handle this intent
-                        val resInfoList = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
-                        for (resolveInfo in resInfoList) {
-                            val packageName = resolveInfo.activityInfo.packageName
-                            grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                         }
 
                         if (intent.resolveActivity(packageManager) != null) {
                             startActivity(intent)
                             return
+                        } else {
+                            android.util.Log.e("TicketsActivity", "No app can handle PDF intent")
                         }
                     } catch (e: Exception) {
                         android.util.Log.e("TicketsActivity", "Error opening internal PDF file: $filePath", e)
+                        // Fallback to original URI
                     }
+                } else {
+                    android.util.Log.w("TicketsActivity", "PDF file does not exist at: $filePath")
                 }
             }
 
-            // If internal file doesn't work, try to recreate it from original URI
+            // Fallback: try original URI
             ticket.pdfUri?.let { uriString ->
+                android.util.Log.d("TicketsActivity", "Trying fallback URI: $uriString")
                 try {
-                    val originalUri = Uri.parse(uriString)
-
-                    // Try to check if we still have permission and recreate internal file if needed
-                    if (originalUri.scheme == "content") {
-                        try {
-                            // Test if we can still read the original URI
-                            contentResolver.openInputStream(originalUri)?.use {
-                                // If we can read it, try to save it again to internal storage
-                                val newInternalPath = recreateInternalFile(originalUri, ticket)
-                                if (newInternalPath != null) {
-                                    // Update the ticket with new internal path
-                                    val updatedTicket = ticket.copy(pdfFilePath = newInternalPath)
-                                    TicketsRepository.updateTicket(updatedTicket)
-
-                                    // Try to open the newly created internal file
-                                    openTicketPdf(updatedTicket)
-                                    return
-                                }
-                            }
-                        } catch (e: Exception) {
-                            android.util.Log.w("TicketsActivity", "Cannot access original URI, permission lost", e)
-                        }
-                    }
-
-                    // Last resort: try to open the original URI directly
+                    val uri = Uri.parse(uriString)
                     val intent = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(originalUri, "application/pdf")
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        setDataAndType(uri, "application/pdf")
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                     }
 
                     if (intent.resolveActivity(packageManager) != null) {
@@ -321,38 +305,16 @@ class TicketsActivity : BaseActivity() {
                         Toast.makeText(this, getString(R.string.no_app_to_open_pdf), Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("TicketsActivity", "Error opening original PDF URI", e)
+                    android.util.Log.e("TicketsActivity", "Error opening PDF from URI: $uriString", e)
                     Toast.makeText(this, getString(R.string.pdf_open_error, e.message), Toast.LENGTH_SHORT).show()
                 }
             } ?: run {
+                android.util.Log.w("TicketsActivity", "No PDF URI available")
                 Toast.makeText(this, getString(R.string.pdf_not_found), Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             android.util.Log.e("TicketsActivity", "General error opening PDF", e)
             Toast.makeText(this, getString(R.string.pdf_open_error, e.message), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun recreateInternalFile(originalUri: Uri, ticket: Ticket): String? {
-        return try {
-            val pdfDir = File(filesDir, "pdf_tickets")
-            if (!pdfDir.exists()) {
-                pdfDir.mkdirs()
-            }
-
-            val fileName = "ticket_${ticket.id}_${System.currentTimeMillis()}.pdf"
-            val destinationFile = File(pdfDir, fileName)
-
-            contentResolver.openInputStream(originalUri)?.use { inputStream ->
-                FileOutputStream(destinationFile).use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
-            }
-
-            destinationFile.absolutePath
-        } catch (e: Exception) {
-            android.util.Log.e("TicketsActivity", "Failed to recreate internal file", e)
-            null
         }
     }
 
@@ -362,12 +324,12 @@ class TicketsActivity : BaseActivity() {
         try {
             val ticket = pdfProcessor.processPDF(uri)
             if (ticket != null) {
-                // НЕ зберігаємо квиток одразу - передаємо як тимчасовий
+                // DO NOT save the ticket immediately - pass as temporary
                 Toast.makeText(this, getString(R.string.pdf_processed_successfully), Toast.LENGTH_LONG).show()
 
-                // Відкриваємо екран редагування з тимчасовим квитком
+                // Open editing screen with temporary ticket
                 val intent = Intent(this, TicketEditActivity::class.java)
-                intent.putExtra("TEMP_TICKET_DATA", ticket.toJson()) // Передаємо як тимчасовий
+                intent.putExtra("TEMP_TICKET_DATA", ticket.toJson()) // Pass as temporary
                 startActivity(intent)
             } else {
                 // Check if this is due to PDF duplication
@@ -415,6 +377,17 @@ class TicketsActivity : BaseActivity() {
 
     private fun loadTickets() {
         val allTickets = TicketsRepository.getAllTickets()
+
+        android.util.Log.d("TicketsActivity", "=== Loading tickets, total count: ${allTickets.size} ===")
+        allTickets.forEachIndexed { index, ticket ->
+            android.util.Log.d("TicketsActivity", "Ticket $index: id=${ticket.id}, title=${ticket.title}")
+            android.util.Log.d("TicketsActivity", "  pdfFilePath=${ticket.pdfFilePath}")
+            android.util.Log.d("TicketsActivity", "  pdfUri=${ticket.pdfUri}")
+            ticket.pdfFilePath?.let { path ->
+                val file = File(path)
+                android.util.Log.d("TicketsActivity", "  File exists: ${file.exists()}, size: ${if (file.exists()) file.length() else "N/A"}")
+            }
+        }
 
         // Extended ticket sorting according to new requirements
         val sortedTickets = allTickets.sortedWith { ticket1, ticket2 ->

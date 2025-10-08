@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android Standard Icons Reference</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .icon-item { border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; }
+        .icon-name { font-weight: bold; color: #333; margin-bottom: 10px; }
+        .icon-code { background: #f5f5f5; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        .current-usage { background: #e8f5e8; border-color: #4caf50; }
+        .category { margin-top: 30px; margin-bottom: 15px; font-size: 18px; font-weight: bold; color: #2196f3; }
+    </style>
+</head>
+<body>
+    <h1>Android Standard Icons Reference</h1>
+    <p>Це довідник стандартних Android іконок, які можна використовувати у вашому додатку.</p>
+
+    <div class="category">🔥 Поточно використовувані в проекті:</div>
+    <div class="icon-grid">
+        <div class="icon-item current-usage">
+            <div class="icon-name">💾 Зберегти</div>
+            <div class="icon-code">@android:drawable/ic_menu_save</div>
+            <p>Використовується для збереження квитків</p>
+        </div>
+
+        <div class="icon-item current-usage">
+            <div class="icon-name">👁️ Переглянути</div>
+            <div class="icon-code">@android:drawable/ic_menu_view</div>
+            <p>Використовується для відкриття PDF файлів</p>
+        </div>
+
+        <div class="icon-item current-usage">
+            <div class="icon-name">🗑️ Видалити</div>
+            <div class="icon-code">@android:drawable/ic_menu_delete</div>
+            <p>Використовується для видалення квитків</p>
+        </div>
+
+        <div class="icon-item current-usage">
+            <div class="icon-name">🔄 Замінити PDF</div>
+            <div class="icon-code">@android:drawable/ic_menu_rotate</div>
+            <p>Стрілка по колу для заміни PDF файлу</p>
+        </div>
+    </div>
+
+    <div class="category">📱 Популярні Android Menu Icons:</div>
+    <div class="icon-grid">
+        <div class="icon-item">
+            <div class="icon-name">➕ Додати</div>
+            <div class="icon-code">@android:drawable/ic_menu_add</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">✏️ Редагувати</div>
+            <div class="icon-code">@android:drawable/ic_menu_edit</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">📤 Поділитися</div>
+            <div class="icon-code">@android:drawable/ic_menu_share</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">ℹ️ Інформація</div>
+            <div class="icon-code">@android:drawable/ic_menu_info_details</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">🔍 Пошук</div>
+            <div class="icon-code">@android:drawable/ic_menu_search</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">⚙️ Налаштування</div>
+            <div class="icon-code">@android:drawable/ic_menu_preferences</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">📋 Копіювати</div>
+            <div class="icon-code">@android:drawable/ic_menu_copy</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">📁 Папка</div>
+            <div class="icon-code">@android:drawable/ic_menu_directory</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">📧 Надіслати</div>
+            <div class="icon-code">@android:drawable/ic_menu_send</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">🔄 Оновити</div>
+            <div class="icon-code">@android:drawable/ic_menu_rotate</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">⬅️ Назад</div>
+            <div class="icon-code">@android:drawable/ic_menu_revert</div>
+        </div>
+
+        <div class="icon-item">
+            <div class="icon-name">📊 Звіт</div>
+            <div class="icon-code">@android:drawable/ic_menu_report_image</div>
+        </div>
+    </div>
+
+    <div class="category">📋 Як використовувати:</div>
+    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-top: 15px;">
+        <p><strong>1. У XML Layout:</strong></p>
+        <code>android:src="@android:drawable/ic_menu_save"</code>
+
+        <p style="margin-top: 15px;"><strong>2. У Kotlin/Java коді:</strong></p>
+        <code>imageButton.setImageResource(android.R.drawable.ic_menu_save)</code>
+
+        <p style="margin-top: 15px;"><strong>3. Для власних іконок:</strong></p>
+        <code>android:src="@drawable/your_custom_icon"</code>
+    </div>
+
+    <div class="category">💡 Поради:</div>
+    <ul>
+        <li>Стандартні Android іконки автоматично адаптуються до теми додатка</li>
+        <li>Вони мають однаковий стиль та розмір</li>
+        <li>Рекомендується використовувати стандартні іконки для знайомих дій</li>
+        <li>Для унікальних функцій (як ваша заміна PDF) краще створити власну іконку</li>
+    </ul>
+</body>
+</html>

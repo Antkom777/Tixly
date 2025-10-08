@@ -42,6 +42,11 @@
     <string name="pdf_open_error">PDF opening error: %1$s</string>
     <string name="pdf_not_found">PDF file not found for this ticket</string>
     <string name="no_saved_tickets">No saved tickets</string>
+    <string name="pdf_attached_ready_to_save">PDF file attached. Press "Save" to save changes.</string>
+    <string name="ticket_updated_with_pdf">Ticket updated with new PDF file!</string>
+    <string name="pdf_replacement_error">PDF replacement error: %1$s</string>
+    <string name="pdf_save_error">PDF save error: %1$s</string>
+    <string name="save_error">Save error: %1$s</string>
 
     <!-- Ad strings -->
     <string name="ad_banner">Advertisement</string>
@@ -66,10 +71,8 @@
     <string name="replace_pdf_confirmation">Are you sure you want to replace the current PDF file? The old file will be deleted.</string>
     <string name="replace">Replace</string>
     <string name="pdf_file_replaced">PDF file replaced</string>
-    <string name="pdf_replacement_error">PDF replacement error: %1$s</string>
     <string name="select_pdf_for_copy">Select PDF file for ticket copy</string>
     <string name="ticket_copy_created">Ticket copy created</string>
-    <string name="pdf_save_error">PDF save error: %1$s</string>
     <string name="manually_created_ticket">Manually created ticket</string>
 
     <!-- Content descriptions for buttons -->
@@ -90,7 +93,7 @@
     <string name="discard">Discard</string>
 
     <!-- Additional strings needed by code -->
-    <string name="event_on">Event on</string>
+    <string name="event_on">Event</string>
     <string name="new_event">New Ticket</string>
 
     <!-- Sample ticket strings (used in TicketsRepository) -->

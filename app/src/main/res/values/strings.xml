@@ -42,6 +42,11 @@
     <string name="pdf_open_error">Помилка відкриття PDF: %1$s</string>
     <string name="pdf_not_found">PDF файл не знайдено для цього квитка</string>
     <string name="no_saved_tickets">Немає збережених квитків</string>
+    <string name="pdf_attached_ready_to_save">PDF файл приєднано. Натисніть "Зберегти" для збереження змін.</string>
+    <string name="ticket_updated_with_pdf">Квиток оновлено з новим PDF файлом!</string>
+    <string name="pdf_replacement_error">Помилка заміни PDF: %1$s</string>
+    <string name="pdf_save_error">Помилка збереження PDF: %1$s</string>
+    <string name="save_error">Помилка збереження: %1$s</string>
 
     <!-- Ad strings -->
     <string name="ad_banner">Реклама</string>
@@ -66,10 +71,8 @@
     <string name="replace_pdf_confirmation">Ви впевнені, що хочете замінити поточний PDF файл? Старий файл буде видалено.</string>
     <string name="replace">Замінити</string>
     <string name="pdf_file_replaced">PDF файл замінено</string>
-    <string name="pdf_replacement_error">Помилка заміни PDF: %1$s</string>
     <string name="select_pdf_for_copy">Оберіть PDF файл для копії квитка</string>
     <string name="ticket_copy_created">Копію квитка створено</string>
-    <string name="pdf_save_error">Помилка збереження PDF: %1$s</string>
     <string name="manually_created_ticket">Квиток створено вручну</string>
 
     <!-- Content descriptions for buttons -->

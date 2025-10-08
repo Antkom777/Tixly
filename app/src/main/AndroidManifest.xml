@@ -2,22 +2,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Дозволи для роботи з календарем -->
+    <!-- Permissions for calendar functionality -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 
-    <!-- Дозвіл для читання файлів -->
+    <!-- Permission for reading files -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
-    <!-- Дозвіл на доступ до Інтернету для реклами (якщо потрібно) -->
+    <!-- Internet permission for ads (if needed) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Дозвіл на управління зовнішнім сховищем для Android 11+ -->
+    <!-- External storage management permission for Android 11+ -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
 
-    <!-- Дозвіл на запит усіх пакетів для вирішення намірів -->
+    <!-- Permission to query all packages for intent resolution -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
@@ -30,7 +30,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
 
-        <!-- Головна активність - список квитків -->
+        <!-- Main activity - tickets list -->
         <activity
             android:name=".TicketsActivity"
             android:exported="true"
@@ -40,7 +40,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Intent filter для відкриття PDF файлів -->
+            <!-- Intent filter for opening PDF files -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -48,7 +48,7 @@
                 <data android:mimeType="application/pdf" />
             </intent-filter>
 
-            <!-- Intent filter для отримання PDF через Share -->
+            <!-- Intent filter for receiving PDF via Share -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -56,12 +56,12 @@
             </intent-filter>
         </activity>
 
-        <!-- Допоміжна активність MainActivity для обробки PDF -->
+        <!-- Helper MainActivity for PDF processing -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />
 
-        <!-- Активність для редагування квитків -->
+        <!-- Ticket editing activity -->
         <activity
             android:name=".TicketEditActivity"
             android:exported="false"
@@ -71,7 +71,7 @@
                 android:value=".TicketsActivity" />
         </activity>
 
-        <!-- Активність налаштувань -->
+        <!-- Settings activity -->
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
@@ -81,10 +81,10 @@
                 android:value=".TicketsActivity" />
         </activity>
 
-        <!-- FileProvider для безпечного доступу до PDF файлів -->
+        <!-- FileProvider for secure PDF file access -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.tixly.app.fileprovider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
