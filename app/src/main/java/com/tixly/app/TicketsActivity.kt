@@ -17,6 +17,7 @@ import com.tixly.app.data.Ticket
 import com.tixly.app.data.TicketsRepository
 import com.tixly.app.utils.NotificationScheduler
 import com.tixly.app.utils.PDFProcessor
+import com.tixly.app.utils.ImageProcessor
 import com.tixly.app.utils.SettingsManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
@@ -29,8 +30,10 @@ class TicketsActivity : BaseActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var ticketsAdapter: TicketsAdapter
     private lateinit var pdfProcessor: PDFProcessor
+    private lateinit var imageProcessor: ImageProcessor
     private lateinit var settingsManager: SettingsManager
     private lateinit var adBannerLayout: LinearLayout
+    private var currentAdView: com.google.android.gms.ads.AdView? = null
     private var currentLanguage: String = ""
 
     // Launcher for PDF file selection
@@ -38,6 +41,13 @@ class TicketsActivity : BaseActivity() {
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { processPdfFile(it) }
+    }
+
+    // Launcher for image file selection
+    private val selectImageLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { processImageFile(it) }
     }
 
     // Launcher for settings activity
@@ -58,6 +68,7 @@ class TicketsActivity : BaseActivity() {
         TicketsRepository.initialize(this)
 
         pdfProcessor = PDFProcessor(this)
+        imageProcessor = ImageProcessor(this)
         settingsManager = SettingsManager(this)
 
         // Remember current language
@@ -78,8 +89,17 @@ class TicketsActivity : BaseActivity() {
         handleIncomingIntent(intent)
     }
 
+    override fun onPause() {
+        // Pause ad view
+        com.tixly.app.utils.AdManager.pauseAd(currentAdView)
+        super.onPause()
+    }
+
     override fun onResume() {
         super.onResume()
+
+        // Resume ad view
+        com.tixly.app.utils.AdManager.resumeAd(currentAdView)
 
         // Check if language has changed
         val newLanguage = settingsManager.getLanguage()
@@ -99,16 +119,50 @@ class TicketsActivity : BaseActivity() {
         ticketsAdapter.notifyDataSetChanged()
     }
 
+    override fun onDestroy() {
+        // Destroy ad view
+        com.tixly.app.utils.AdManager.destroyAd(currentAdView)
+        super.onDestroy()
+    }
+
     private fun setupAdBanner() {
         adBannerLayout = findViewById(R.id.layoutAdBanner)
 
-        // Show/hide ads based on settings
-        if (settingsManager.getAdsRemoved()) {
-            adBannerLayout.visibility = android.view.View.GONE
-        } else {
+        // Check if ads should be shown based on user settings
+        if (com.tixly.app.utils.AdManager.shouldShowAds(this)) {
+            // Always show the ad container
             adBannerLayout.visibility = android.view.View.VISIBLE
-            // Google Ads integration will be here
+
+            // Try to create and load Google AdMob banner ad
+            currentAdView = com.tixly.app.utils.AdManager.createBannerAd(this, adBannerLayout)
+
+            // If ad creation failed, show placeholder
+            if (currentAdView == null) {
+                createAdPlaceholder()
+            }
+        } else {
+            // Hide ads if user has removed them
+            com.tixly.app.utils.AdManager.hideAds(adBannerLayout)
         }
+    }
+
+    private fun createAdPlaceholder() {
+        // Create a simple placeholder view
+        val placeholderView = android.widget.TextView(this).apply {
+            text = "Рекламне місце"
+            textSize = 14f
+            gravity = android.view.Gravity.CENTER
+            setTextColor(android.graphics.Color.GRAY)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                (50 * resources.displayMetrics.density).toInt()
+            )
+            setBackgroundColor(android.graphics.Color.parseColor("#F0F0F0"))
+        }
+
+        adBannerLayout.removeAllViews()
+        adBannerLayout.addView(placeholderView)
+        adBannerLayout.visibility = android.view.View.VISIBLE
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -119,24 +173,37 @@ class TicketsActivity : BaseActivity() {
     private fun handleIncomingIntent(intent: Intent) {
         when (intent.action) {
             Intent.ACTION_SEND -> {
-                if (intent.type == "application/pdf") {
-                    val pdfUri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                    }
-                    pdfUri?.let { uri ->
-                        Toast.makeText(this, getString(R.string.pdf_received_via_share), Toast.LENGTH_SHORT).show()
-                        processPdfFile(uri)
+                val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                }
+
+                uri?.let {
+                    when {
+                        intent.type == "application/pdf" -> {
+                            Toast.makeText(this, getString(R.string.pdf_received_via_share), Toast.LENGTH_SHORT).show()
+                            processPdfFile(it)
+                        }
+                        intent.type?.startsWith("image/") == true -> {
+                            Toast.makeText(this, getString(R.string.image_received_via_share), Toast.LENGTH_SHORT).show()
+                            processImageFile(it)
+                        }
                     }
                 }
             }
             Intent.ACTION_VIEW -> {
-                if (intent.type == "application/pdf") {
-                    intent.data?.let { uri ->
-                        Toast.makeText(this, getString(R.string.pdf_opened_in_app), Toast.LENGTH_SHORT).show()
-                        processPdfFile(uri)
+                intent.data?.let { uri ->
+                    when {
+                        intent.type == "application/pdf" -> {
+                            Toast.makeText(this, getString(R.string.pdf_opened_in_app), Toast.LENGTH_SHORT).show()
+                            processPdfFile(uri)
+                        }
+                        intent.type?.startsWith("image/") == true -> {
+                            Toast.makeText(this, getString(R.string.image_opened_in_app), Toast.LENGTH_SHORT).show()
+                            processImageFile(uri)
+                        }
                     }
                 }
             }
@@ -150,6 +217,11 @@ class TicketsActivity : BaseActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_info -> {
+                val intent = Intent(this, InfoActivity::class.java)
+                startActivity(intent)
+                true
+            }
             R.id.action_settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)
                 settingsLauncher.launch(intent)
@@ -158,7 +230,6 @@ class TicketsActivity : BaseActivity() {
             R.id.action_exit -> {
                 finishAffinity()
                 exitProcess(0)
-                true
             }
             else -> super.onOptionsItemSelected(item)
         }
@@ -167,31 +238,9 @@ class TicketsActivity : BaseActivity() {
     private fun setupFab() {
         val fab = findViewById<FloatingActionButton>(R.id.fabAddTicket)
         fab.setOnClickListener {
-            // Show dialog to choose ticket addition method
-            showAddTicketDialog()
+            // Directly create new ticket manually without dialog
+            createManualTicket()
         }
-    }
-
-    private fun showAddTicketDialog() {
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(getString(R.string.add_ticket_dialog_title))
-            .setItems(arrayOf(
-                getString(R.string.add_ticket_from_pdf),
-                getString(R.string.add_ticket_manually)
-            )) { _, which ->
-                when (which) {
-                    0 -> {
-                        // Add ticket from PDF file
-                        selectPdfLauncher.launch("application/pdf")
-                    }
-                    1 -> {
-                        // Create ticket manually
-                        createManualTicket()
-                    }
-                }
-            }
-            .setNegativeButton(getString(R.string.cancel), null)
-            .show()
     }
 
     private fun createManualTicket() {
@@ -201,19 +250,27 @@ class TicketsActivity : BaseActivity() {
     }
 
     private fun updateAdBannerVisibility() {
-        if (settingsManager.getAdsRemoved()) {
-            adBannerLayout.visibility = android.view.View.GONE
-            // Change FAB margin when ad is hidden
-            val fab = findViewById<FloatingActionButton>(R.id.fabAddTicket)
-            val params = fab.layoutParams as androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams
-            params.bottomMargin = resources.getDimensionPixelSize(android.R.dimen.app_icon_size) / 4
-            fab.layoutParams = params
-        } else {
-            adBannerLayout.visibility = android.view.View.VISIBLE
+        // Check if ads should be shown and update accordingly
+        if (com.tixly.app.utils.AdManager.shouldShowAds(this)) {
+            // Show ads - create new ad if needed
+            if (currentAdView == null) {
+                currentAdView = com.tixly.app.utils.AdManager.createBannerAd(this, adBannerLayout)
+            }
+
             // Restore FAB margin when ad is shown
             val fab = findViewById<FloatingActionButton>(R.id.fabAddTicket)
             val params = fab.layoutParams as androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams
             params.bottomMargin = 80 * resources.displayMetrics.density.toInt()
+            fab.layoutParams = params
+        } else {
+            // Hide ads
+            com.tixly.app.utils.AdManager.hideAds(adBannerLayout)
+            currentAdView = null
+
+            // Change FAB margin when ad is hidden
+            val fab = findViewById<FloatingActionButton>(R.id.fabAddTicket)
+            val params = fab.layoutParams as androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams
+            params.bottomMargin = resources.getDimensionPixelSize(android.R.dimen.app_icon_size) / 4
             fab.layoutParams = params
         }
     }
@@ -230,8 +287,8 @@ class TicketsActivity : BaseActivity() {
                 startActivity(intent)
             },
             onOpenClick = { ticket ->
-                // Open PDF file (if available)
-                openTicketPdf(ticket)
+                // Open attachment file (PDF or image)
+                openTicketAttachment(ticket)
             },
             onCopyClick = { ticket ->
                 // Copy ticket with new PDF
@@ -249,55 +306,34 @@ class TicketsActivity : BaseActivity() {
         startActivity(intent)
     }
 
-    private fun openTicketPdf(ticket: Ticket) {
-        android.util.Log.d("TicketsActivity", "=== TicketsActivity Opening PDF Debug Info ===")
-        android.util.Log.d("TicketsActivity", "Opening PDF for ticket: ${ticket.id}")
-        android.util.Log.d("TicketsActivity", "Ticket title: ${ticket.title}")
-        android.util.Log.d("TicketsActivity", "PDF file path: ${ticket.pdfFilePath}")
-        android.util.Log.d("TicketsActivity", "PDF URI: ${ticket.pdfUri}")
+    private fun openTicketAttachment(ticket: Ticket) {
+        android.util.Log.d("TicketsActivity", "=== Opening ticket attachment ===")
+        android.util.Log.d("TicketsActivity", "Ticket: ${ticket.id}, title: ${ticket.title}")
+        android.util.Log.d("TicketsActivity", "File type: ${ticket.fileType}")
 
         try {
-            // First, try to open the saved copy from internal storage
-            ticket.pdfFilePath?.let { filePath ->
-                val file = File(filePath)
-                android.util.Log.d("TicketsActivity", "Checking file exists: ${file.exists()}")
-                android.util.Log.d("TicketsActivity", "File absolute path: ${file.absolutePath}")
-                android.util.Log.d("TicketsActivity", "File length: ${if (file.exists()) file.length() else "N/A"}")
-
-                if (file.exists()) {
-                    try {
-                        val uri = androidx.core.content.FileProvider.getUriForFile(
-                            this,
-                            "${packageName}.fileprovider",
-                            file
-                        )
-                        android.util.Log.d("TicketsActivity", "FileProvider URI: $uri")
-
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, "application/pdf")
-                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        }
-
-                        if (intent.resolveActivity(packageManager) != null) {
-                            startActivity(intent)
-                            return
-                        } else {
-                            android.util.Log.e("TicketsActivity", "No app can handle PDF intent")
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e("TicketsActivity", "Error opening internal PDF file: $filePath", e)
-                        // Fallback to original URI
-                    }
-                } else {
-                    android.util.Log.w("TicketsActivity", "PDF file does not exist at: $filePath")
-                }
+            when (ticket.fileType) {
+                Ticket.FileType.PDF -> openPdfAttachment(ticket)
+                Ticket.FileType.IMAGE -> openImageAttachment(ticket)
             }
+        } catch (e: Exception) {
+            android.util.Log.e("TicketsActivity", "Error opening attachment", e)
+            Toast.makeText(this, getString(R.string.attachment_open_error, e.message), Toast.LENGTH_SHORT).show()
+        }
+    }
 
-            // Fallback: try original URI
-            ticket.pdfUri?.let { uriString ->
-                android.util.Log.d("TicketsActivity", "Trying fallback URI: $uriString")
+    private fun openPdfAttachment(ticket: Ticket) {
+        // First, try to open the saved copy from internal storage
+        ticket.pdfFilePath?.let { filePath ->
+            val file = File(filePath)
+            if (file.exists()) {
                 try {
-                    val uri = Uri.parse(uriString)
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        this,
+                        "${packageName}.fileprovider",
+                        file
+                    )
+
                     val intent = Intent(Intent.ACTION_VIEW).apply {
                         setDataAndType(uri, "application/pdf")
                         flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -305,20 +341,82 @@ class TicketsActivity : BaseActivity() {
 
                     if (intent.resolveActivity(packageManager) != null) {
                         startActivity(intent)
-                    } else {
-                        Toast.makeText(this, getString(R.string.no_app_to_open_pdf), Toast.LENGTH_SHORT).show()
+                        return
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("TicketsActivity", "Error opening PDF from URI: $uriString", e)
-                    Toast.makeText(this, getString(R.string.pdf_open_error, e.message), Toast.LENGTH_SHORT).show()
+                    android.util.Log.e("TicketsActivity", "Error opening internal PDF file", e)
                 }
-            } ?: run {
-                android.util.Log.w("TicketsActivity", "No PDF URI available")
-                Toast.makeText(this, getString(R.string.pdf_not_found), Toast.LENGTH_SHORT).show()
             }
-        } catch (e: Exception) {
-            android.util.Log.e("TicketsActivity", "General error opening PDF", e)
-            Toast.makeText(this, getString(R.string.pdf_open_error, e.message), Toast.LENGTH_SHORT).show()
+        }
+
+        // Fallback: try original URI
+        ticket.pdfUri?.let { uriString ->
+            try {
+                val uri = Uri.parse(uriString)
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/pdf")
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+
+                if (intent.resolveActivity(packageManager) != null) {
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(this, getString(R.string.no_app_to_open_pdf), Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, getString(R.string.pdf_open_error, e.message), Toast.LENGTH_SHORT).show()
+            }
+        } ?: run {
+            Toast.makeText(this, getString(R.string.pdf_not_found), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openImageAttachment(ticket: Ticket) {
+        // First, try to open the saved copy from internal storage
+        ticket.imageFilePath?.let { filePath ->
+            val file = File(filePath)
+            if (file.exists()) {
+                try {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        this,
+                        "${packageName}.fileprovider",
+                        file
+                    )
+
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "image/*")
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    }
+
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent)
+                        return
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("TicketsActivity", "Error opening internal image file", e)
+                }
+            }
+        }
+
+        // Fallback: try original URI
+        ticket.imageUri?.let { uriString ->
+            try {
+                val uri = Uri.parse(uriString)
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "image/*")
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+
+                if (intent.resolveActivity(packageManager) != null) {
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(this, getString(R.string.no_app_to_open_image), Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, getString(R.string.image_open_error, e.message), Toast.LENGTH_SHORT).show()
+            }
+        } ?: run {
+            Toast.makeText(this, getString(R.string.image_not_found), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -340,9 +438,9 @@ class TicketsActivity : BaseActivity() {
                 val fileName = getFileNameFromUri(uri)
                 if (fileName != null) {
                     val allTickets = TicketsRepository.getAllTickets()
-                    val duplicateTicket = allTickets.find { ticket ->
-                        val existingFileName = ticket.pdfFilePath?.let { File(it).name }
-                            ?: ticket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                    val duplicateTicket = allTickets.find { existingTicket ->
+                        val existingFileName = existingTicket.pdfFilePath?.let { File(it).name }
+                            ?: existingTicket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
                         existingFileName != null && existingFileName == fileName
                     }
 
@@ -360,6 +458,28 @@ class TicketsActivity : BaseActivity() {
             }
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.pdf_processing_error, e.message), Toast.LENGTH_LONG).show()
+            e.printStackTrace()
+        }
+    }
+
+    private fun processImageFile(uri: Uri) {
+        Toast.makeText(this, getString(R.string.processing_image), Toast.LENGTH_SHORT).show()
+
+        try {
+            val ticket = imageProcessor.processImage(uri)
+            if (ticket != null) {
+                // Image processed and ticket created
+                Toast.makeText(this, getString(R.string.image_processed_successfully), Toast.LENGTH_LONG).show()
+
+                // Open editing screen with new ticket
+                val intent = Intent(this, TicketEditActivity::class.java)
+                intent.putExtra("TICKET_ID", ticket.id)
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, getString(R.string.failed_to_process_image), Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, getString(R.string.image_processing_error, e.message), Toast.LENGTH_LONG).show()
             e.printStackTrace()
         }
     }

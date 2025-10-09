@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Allow access to internal app files -->
-    <files-path name="internal_files" path="." />
+    <!-- Internal storage files directory for PDFs -->
+    <files-path name="pdf_files" path="pdf_tickets/" />
 
-    <!-- Allow access to PDF tickets folder -->
-    <files-path name="pdf_tickets" path="pdf_tickets/" />
+    <!-- Internal storage files directory for images -->
+    <files-path name="image_files" path="image_tickets/" />
 
-    <!-- Allow access to cache -->
-    <cache-path name="cache" path="." />
-
-    <!-- Allow access to external files (if needed) -->
-    <external-files-path name="external_files" path="." />
+    <!-- General files directory -->
+    <files-path name="files" path="." />
 </paths>
+

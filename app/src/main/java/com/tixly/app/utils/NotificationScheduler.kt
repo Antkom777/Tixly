@@ -99,9 +99,9 @@ object NotificationScheduler {
                     android.util.Log.w("NotificationScheduler", "⚠️ Cannot schedule exact alarms - requesting permission")
                     // For Android 12+ we need to request exact alarm permission
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                        val settingsIntent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                         if (context is android.app.Activity) {
-                            context.startActivity(intent)
+                            context.startActivity(settingsIntent)
                         }
                     }
                     // Fallback to inexact alarm

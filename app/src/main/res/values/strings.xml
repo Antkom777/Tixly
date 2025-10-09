@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Tixly</string>
     <string name="settings">Налаштування</string>
+    <string name="info">Довідка</string>
     <string name="exit">Вихід</string>
 
     <!-- Settings strings -->
@@ -25,93 +26,145 @@
     <!-- Ticket strings -->
     <string name="my_tickets">Мої квитки</string>
     <string name="add_ticket">Додати квиток</string>
+    <string name="cancel">Скасувати</string>
+
     <string name="ticket_title_placeholder">(Без назви)</string>
     <string name="date_not_specified">Дата не вказана</string>
     <string name="venue_not_specified">Місце не вказано</string>
 
-    <!-- PDF processing strings -->
-    <string name="pdf_received_via_share">PDF файл отримано через Share</string>
-    <string name="pdf_opened_in_app">PDF файл відкрито в додатку</string>
+    <!-- PDF processing -->
     <string name="processing_pdf">Обробка PDF файлу...</string>
-    <string name="pdf_processed_successfully">PDF файл успішно оброблено! Редагуйте квиток та збережіть його.</string>
-    <string name="ticket_saved_successfully">Квиток успішно збережено!</string>
-    <string name="pdf_already_used">Цей PDF файл вже використовується в квитку \"%1$s\". Оберіть інший файл.</string>
-    <string name="failed_to_process_pdf">Не вдалося обробити PDF файл</string>
-    <string name="pdf_processing_error">Помилка при обробці PDF: %1$s</string>
+    <string name="pdf_processed_successfully">PDF успішно оброблено!</string>
+    <string name="failed_to_process_pdf">Не вдалося обробити PDF</string>
+    <string name="pdf_processing_error">Помилка обробки PDF: %1$s</string>
+    <string name="pdf_received_via_share">PDF отримано для створення квитка</string>
+    <string name="pdf_opened_in_app">PDF відкрито в додатку</string>
+
+    <!-- Image processing -->
+    <string name="processing_image">Обробка зображення...</string>
+    <string name="image_processed_successfully">Зображення успішно оброблено!</string>
+    <string name="failed_to_process_image">Не вдалося обробити зображення</string>
+    <string name="image_processing_error">Помилка обробки зображення: %1$s</string>
+    <string name="image_received_via_share">Зображення отримано для створення квитка</string>
+    <string name="image_opened_in_app">Зображення відкрито в додатку</string>
+
+    <!-- Universal file processing -->
+    <string name="failed_to_process_file">Не вдалося обробити файл</string>
+    <string name="unsupported_file_type">Непідтримуваний тип файлу. Оберіть PDF або зображення.</string>
+
+    <!-- Attachment opening errors -->
+    <string name="attachment_open_error">Помилка відкриття вкладення: %1$s</string>
+    <string name="no_app_to_open_image">Немає додатка для відкриття зображень</string>
+    <string name="image_open_error">Помилка відкриття зображення: %1$s</string>
+    <string name="image_not_found">Зображення не знайдено</string>
     <string name="no_app_to_open_pdf">Немає додатка для відкриття PDF</string>
     <string name="pdf_open_error">Помилка відкриття PDF: %1$s</string>
-    <string name="pdf_not_found">PDF файл не знайдено для цього квитка</string>
-    <string name="no_saved_tickets">Немає збережених квитків</string>
-    <string name="pdf_attached_ready_to_save">PDF файл приєднано. Натисніть "Зберегти" для збереження змін.</string>
-    <string name="ticket_updated_with_pdf">Квиток оновлено з новим PDF файлом!</string>
-    <string name="pdf_replacement_error">Помилка заміни PDF: %1$s</string>
-    <string name="pdf_save_error">Помилка збереження PDF: %1$s</string>
-    <string name="save_error">Помилка збереження: %1$s</string>
+    <string name="pdf_not_found">PDF файл не знайдено</string>
 
-    <!-- Ad strings -->
+    <!-- Other strings -->
     <string name="ad_banner">Реклама</string>
-
-    <!-- Ticket editing strings -->
     <string name="edit_ticket">Редагувати квиток</string>
     <string name="new_ticket">Новий квиток</string>
-    <string name="create_ticket_copy">Створення копії квитка</string>
-    <string name="ticket_title_hint">Подія</string>
-    <string name="ticket_venue_hint">Місце проведення</string>
-    <string name="ticket_date_hint">Дата та час (натисніть для вибору)</string>
-    <string name="enter_ticket_title">Введіть назву квитка</string>
-    <string name="ticket_updated">Квиток оновлено</string>
-    <string name="ticket_saved">Квиток збережено</string>
-    <string name="delete_ticket">Видалити квиток</string>
-    <string name="delete_ticket_confirmation">Ви впевнені, що хочете видалити цей квиток?</string>
     <string name="delete">Видалити</string>
-    <string name="cancel">Скасувати</string>
-    <string name="cancelled">Скасовано</string>
-    <string name="ticket_deleted">Квиток видалено</string>
-    <string name="replace_pdf_file">Замінити PDF файл</string>
-    <string name="replace_pdf_confirmation">Ви впевнені, що хочете замінити поточний PDF файл? Старий файл буде видалено.</string>
-    <string name="replace">Замінити</string>
-    <string name="pdf_file_replaced">PDF файл замінено</string>
-    <string name="select_pdf_for_copy">Оберіть PDF файл для копії квитка</string>
-    <string name="ticket_copy_created">Копію квитка створено</string>
-    <string name="manually_created_ticket">Квиток створено вручну</string>
-
-    <!-- Content descriptions for buttons -->
-    <string name="save_ticket_desc">Зберегти квиток</string>
-    <string name="open_pdf_desc">Відкрити PDF</string>
-    <string name="replace_pdf_desc">Замінити PDF</string>
-    <string name="delete_ticket_desc">Видалити квиток</string>
-
-    <!-- Add ticket dialog strings -->
-    <string name="add_ticket_dialog_title">Додати квиток</string>
-    <string name="add_ticket_from_pdf">З PDF файлу</string>
-    <string name="add_ticket_manually">Створити вручну</string>
-
-    <!-- Unsaved changes dialog strings -->
-    <string name="unsaved_changes">Незбережені зміни</string>
-    <string name="unsaved_changes_message">У вас є незбережені зміни. Що ви хочете зробити?</string>
     <string name="save">Зберегти</string>
     <string name="discard">Відкинути</string>
 
-    <!-- Additional strings needed by code -->
-    <string name="event_on">Подія</string>
-    <string name="new_event">Новий квиток</string>
+    <!-- Ticket editing hints and descriptions -->
+    <string name="ticket_title_hint">Назва події</string>
+    <string name="ticket_venue_hint">Місце проведення</string>
+    <string name="ticket_date_hint">Дата та час (натисніть для вибору)</string>
 
-    <!-- Sample ticket strings (used in TicketsRepository) -->
-    <string name="sample_ticket_1_title">Концерт рок-групи</string>
+    <!-- Additional missing strings -->
+    <string name="no_saved_tickets">Немає збережених квитків</string>
+    <string name="pdf_already_used">PDF вже використовується для квитка: %1$s</string>
+
+    <!-- Ticket editing strings -->
+    <string name="create_ticket_copy">Створити копію квитка</string>
+    <string name="enter_ticket_title">Введіть назву квитка</string>
+    <string name="manually_created_ticket">Квиток створено вручну</string>
+    <string name="new_event">Нова подія</string>
+    <string name="ticket_saved">Квиток збережено</string>
+    <string name="ticket_updated">Квиток оновлено</string>
+    <string name="ticket_deleted">Квиток видалено</string>
+    <string name="save_error">Помилка збереження</string>
+    <string name="pdf_save_error">Помилка збереження PDF</string>
+    <string name="ticket_updated_with_pdf">Квиток оновлено з PDF</string>
+    <string name="cancelled">Скасовано</string>
+
+    <!-- Delete confirmation -->
+    <string name="delete_ticket">Видалити квиток</string>
+    <string name="delete_ticket_confirmation">Ви впевнені, що хочете видалити цей квиток?</string>
+
+    <!-- Replace attachment strings -->
+    <string name="replace">Замінити</string>
+    <string name="replace_attachment">Замінити вкладення</string>
+    <string name="replace_attachment_confirmation">Замінити поточне вкладення?</string>
+    <string name="replace_pdf_file">Замінити PDF файл</string>
+    <string name="replace_pdf_confirmation">Замінити поточний PDF файл?</string>
+    <string name="pdf_file_replaced">PDF файл замінено</string>
+    <string name="pdf_replacement_error">Помилка заміни PDF</string>
+    <string name="pdf_attached_ready_to_save">PDF прикріплено, готово до збереження</string>
+    <string name="file_attached_ready_to_save">Файл прикріплено, готово до збереження</string>
+    <string name="file_replacement_error">Помилка заміни файлу: %1$s</string>
+    <string name="file_already_used">Файл вже використовується для квитка: %1$s</string>
+    <string name="file_save_error">Помилка збереження файлу: %1$s</string>
+    <string name="ticket_updated_with_attachment">Квиток оновлено з вкладенням</string>
+    <string name="select_pdf_for_copy">Оберіть файл для копії</string>
+    <string name="ticket_saved_successfully">Квиток успішно збережено</string>
+
+    <!-- Unsaved changes -->
+    <string name="unsaved_changes">Незбережені зміни</string>
+    <string name="unsaved_changes_message">У вас є незбережені зміни. Бажаєте їх зберегти?</string>
+
+    <!-- Sample tickets -->
+    <string name="sample_ticket_1_title">Концерт улюбленого виконавця</string>
     <string name="sample_ticket_1_venue">Палац спорту</string>
     <string name="sample_ticket_2_title">Театральна вистава</string>
     <string name="sample_ticket_2_venue">Національний театр</string>
 
-    <!-- Notification strings -->
+    <!-- Notifications -->
     <string name="event_reminder_title">Нагадування про подію</string>
-    <string name="event_reminder_text">%1$s у %2$s незабаром почнеться!</string>
-    <string name="notification_permission_title">Дозвіл на сповіщення</string>
-    <string name="notification_permission_message">Дозвольте сповіщення, щоб отримувати нагадування про ваші події</string>
-    <string name="grant_permission">Дозволити</string>
-    <string name="test_notification">Тестове сповіщення</string>
-    <string name="test_notification_title">Тест сповіщень Tixly</string>
-    <string name="test_notification_text">Сповіщення працюють правильно!</string>
-    <string name="test_scheduled_notification">Тест планувальника (10 сек)</string>
-    <string name="notifications_disabled">Спочатку увімкніть сповіщення</string>
+    <string name="event_reminder_text">Скоро почнеться: %1$s</string>
+    <string name="test_notification_title">Тестове нагадування</string>
+    <string name="test_notification_text">Це тестове повідомлення для перевірки</string>
 
+    <!-- Content descriptions for buttons -->
+    <string name="save_ticket_desc">Зберегти квиток</string>
+    <string name="open_attachment_desc">Відкрити вкладення</string>
+    <string name="replace_attachment_desc">Замінити вкладення</string>
+    <string name="delete_ticket_desc">Видалити квиток</string>
+
+    <!-- App usage instructions -->
+    <string name="app_usage_instructions">
+        <b>Tixly</b> - помічник для зберігання квитків.\n\n
+        🎫 ДОДАВАННЯ КВИТКІВ:\n
+        • Натисніть ➕ внизу екрана\n
+        • Оберіть PDF файл або зображення квитка натиснувши 🔄\n
+        • Переглянути файл з квитком - 👁\n
+        • Заповніть назву, місце та дату події\n
+        • Натисніть 💾 для збереження\n\n
+        📤 ШВИДКЕ ДОДАВАННЯ З ФАЙЛУ:\n
+        • Відкрийте зображення квитка в будь-якому додатку\n
+        • Натисніть кнопку "Поширити" (Share)\n
+        • Оберіть "Tixly" зі списку додатків\n
+        • Квиток відкриється для редагування\n
+        • Заповніть назву, місце та дату події\n
+        • Натисніть 💾 для збереження\n\n
+        📱 ПЕРЕГЛЯД І РЕДАГУВАННЯ КВИТКІВ:\n
+        • 🖊️ - редагування квитка\n
+        • 👁 - перегляд файлу з квитком\n\n
+        📋 КОПІЮВАННЯ КВИТКІВ:\n
+        • Натисніть ⊕ на квитку\n
+        • Назва, місце і дата події будуть скопійовані\n
+        • Виберіть новий файл квитка для копії - 🔄\n
+        • Натисніть 💾 для збереження\n\n
+        🔔 НАГАДУВАННЯ:\n
+        • Увімкніть нагадування в налаштуваннях\n
+        • Оберіть час сповіщення (від 1 години до 1 тижня)\n
+        • Отримуйте нагадування про майбутні події\n\n
+        ⚙️ НАЛАШТУВАННЯ:\n
+        • Змініть мову додатка\n
+        • Налаштуйте нагадування\n
+        • Відключіть рекламу
+    </string>
 </resources>

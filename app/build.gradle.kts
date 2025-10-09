@@ -62,6 +62,9 @@ dependencies {
     implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
     implementation("com.google.code.gson:gson:2.10.1")
 
+    // Google AdMob for ads
+    implementation("com.google.android.gms:play-services-ads:23.3.0")
+
     // For PDF file processing (keeping commented for now)
     // implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 

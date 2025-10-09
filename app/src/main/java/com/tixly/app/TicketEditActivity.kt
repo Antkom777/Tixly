@@ -35,18 +35,26 @@ class TicketEditActivity : BaseActivity() {
     private var selectedDate: Calendar = Calendar.getInstance()
     private var currentLanguage: String = ""
 
-    // Launcher for selecting new PDF file for replacement
-    private val selectReplacementPdfLauncher = registerForActivityResult(
+    // Launcher for selecting any file for replacement (PDF or image)
+    private val selectReplacementFileLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { replacePdfFile(it) }
+        uri?.let { processSelectedFile(it) }
     }
 
-    // Launcher for selecting PDF when copying
-    private val selectCopyPdfLauncher = registerForActivityResult(
+    // Launcher for selecting any file when copying (not just PDF)
+    private val selectCopyFileLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { validateAndSetCopyPdf(it) }
+        if (uri != null) {
+            validateAndSetCopyFile(uri)
+        } else {
+            // User cancelled file selection during copy operation
+            android.util.Log.d("TicketEditActivity", "Copy file selection cancelled - clearing copy mode")
+            copyFromTicketId = null // Clear copy mode
+            updateButtonStates() // Update button states to normal mode
+            updateActivityTitle() // Update title
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,6 +90,9 @@ class TicketEditActivity : BaseActivity() {
         }
 
         updateActivityTitle()
+
+        // Update button states when returning to activity (e.g., after cancelling file selection)
+        updateButtonStates()
     }
 
     private fun updateActivityTitle() {
@@ -149,7 +160,7 @@ class TicketEditActivity : BaseActivity() {
                 }
 
                 Toast.makeText(this, getString(R.string.select_pdf_for_copy), Toast.LENGTH_LONG).show()
-                selectCopyPdfLauncher.launch("application/pdf")
+                selectCopyFileLauncher.launch("*/*")
 
                 // PDF buttons unavailable until file is selected
                 buttonOpen.isEnabled = false
@@ -175,10 +186,10 @@ class TicketEditActivity : BaseActivity() {
                 }
 
                 // Setup PDF buttons
-                val hasPdf = !ticket.pdfUri.isNullOrEmpty() || (!ticket.pdfFilePath.isNullOrEmpty() && File(ticket.pdfFilePath).exists())
-                buttonOpen.isEnabled = hasPdf
-                buttonOpen.alpha = if (hasPdf) 1.0f else 0.5f
-                // Replace PDF button always active
+                val hasAttachment = ticket.hasAttachment()
+                buttonOpen.isEnabled = hasAttachment
+                buttonOpen.alpha = if (hasAttachment) 1.0f else 0.5f
+                // Replace attachment button always active
                 buttonReplace.isEnabled = true
                 buttonReplace.alpha = 1.0f
             }
@@ -192,7 +203,7 @@ class TicketEditActivity : BaseActivity() {
             buttonReplace.alpha = 1.0f
         }
 
-        // If this is temporary ticket with PDF
+        // If this is temporary ticket with attachment
         tempTicket?.let { ticket ->
             supportActionBar?.title = getString(R.string.edit_ticket)
 
@@ -204,12 +215,14 @@ class TicketEditActivity : BaseActivity() {
                 updateDateField()
             }
 
-            val hasPdf = !ticket.pdfUri.isNullOrEmpty() || (!ticket.pdfFilePath.isNullOrEmpty() && File(ticket.pdfFilePath).exists())
-            buttonOpen.isEnabled = hasPdf
-            buttonOpen.alpha = if (hasPdf) 1.0f else 0.5f
+            val hasAttachment = ticket.hasAttachment()
+            buttonOpen.isEnabled = hasAttachment
+            buttonOpen.alpha = if (hasAttachment) 1.0f else 0.5f
             buttonReplace.isEnabled = true
             buttonReplace.alpha = 1.0f
         }
+
+        updateButtonStates()
     }
 
     private fun saveTicket() {
@@ -270,20 +283,27 @@ class TicketEditActivity : BaseActivity() {
                     Toast.makeText(this, getString(R.string.ticket_saved), Toast.LENGTH_SHORT).show()
                     true
                 }
-                // Updating existing ticket without PDF changes
+                // Updating existing ticket without attachment changes
                 tempTicket == null -> {
                     TicketsRepository.updateTicket(ticketToSave)
                     Toast.makeText(this, getString(R.string.ticket_updated), Toast.LENGTH_SHORT).show()
                     true
                 }
-                // Updating existing ticket WITH PDF changes
+                // Updating existing ticket WITH attachment changes
                 else -> {
                     val oldPdfPath = currentTicket!!.pdfFilePath
+                    val oldImagePath = currentTicket!!.imageFilePath
 
-                    // Verify new PDF file exists before proceeding
-                    if (ticketToSave.pdfFilePath?.let { File(it).exists() } != true) {
-                        android.util.Log.e("TicketEditActivity", "New PDF file missing: ${ticketToSave.pdfFilePath}")
-                        Toast.makeText(this, getString(R.string.pdf_save_error, "File missing"), Toast.LENGTH_SHORT).show()
+                    // Verify new attachment file exists before proceeding
+                    val newAttachmentExists = when {
+                        ticketToSave.pdfFilePath != null -> File(ticketToSave.pdfFilePath).exists()
+                        ticketToSave.imageFilePath != null -> File(ticketToSave.imageFilePath).exists()
+                        else -> true // No attachment is also valid
+                    }
+
+                    if (!newAttachmentExists) {
+                        android.util.Log.e("TicketEditActivity", "New attachment file missing: PDF=${ticketToSave.pdfFilePath}, Image=${ticketToSave.imageFilePath}")
+                        Toast.makeText(this, getString(R.string.file_save_error, "File missing"), Toast.LENGTH_SHORT).show()
                         return
                     }
 
@@ -292,15 +312,21 @@ class TicketEditActivity : BaseActivity() {
 
                     // Verify save was successful
                     val verifyTicket = TicketsRepository.getTicketById(ticketToSave.id)
-                    if (verifyTicket?.pdfFilePath != ticketToSave.pdfFilePath) {
+                    val saveSuccessful = when {
+                        ticketToSave.pdfFilePath != null -> verifyTicket?.pdfFilePath == ticketToSave.pdfFilePath
+                        ticketToSave.imageFilePath != null -> verifyTicket?.imageFilePath == ticketToSave.imageFilePath
+                        else -> true
+                    }
+
+                    if (!saveSuccessful) {
                         android.util.Log.e("TicketEditActivity", "Save verification failed!")
                         Toast.makeText(this, getString(R.string.save_error, "Verification failed"), Toast.LENGTH_SHORT).show()
                         return
                     }
 
-                    android.util.Log.d("TicketEditActivity", "Save verified successfully: ${verifyTicket.pdfFilePath}")
+                    android.util.Log.d("TicketEditActivity", "Save verified successfully")
 
-                    // Clean up old PDF file only after successful verification
+                    // Clean up old files only after successful verification
                     if (!oldPdfPath.isNullOrEmpty() && oldPdfPath != ticketToSave.pdfFilePath) {
                         try {
                             val oldFile = File(oldPdfPath)
@@ -313,7 +339,19 @@ class TicketEditActivity : BaseActivity() {
                         }
                     }
 
-                    Toast.makeText(this, getString(R.string.ticket_updated_with_pdf), Toast.LENGTH_SHORT).show()
+                    if (!oldImagePath.isNullOrEmpty() && oldImagePath != ticketToSave.imageFilePath) {
+                        try {
+                            val oldFile = File(oldImagePath)
+                            if (oldFile.exists()) {
+                                val deleted = oldFile.delete()
+                                android.util.Log.d("TicketEditActivity", "Deleted old image: $oldImagePath, success: $deleted")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("TicketEditActivity", "Failed to delete old image: $oldImagePath", e)
+                        }
+                    }
+
+                    Toast.makeText(this, getString(R.string.ticket_updated_with_attachment), Toast.LENGTH_SHORT).show()
                     true
                 }
             }
@@ -395,55 +433,35 @@ class TicketEditActivity : BaseActivity() {
     private fun openTicketPdf() {
         val ticketToOpen = tempTicket ?: currentTicket
 
-        android.util.Log.d("TicketEditActivity", "=== Opening PDF Debug Info ===")
+        android.util.Log.d("TicketEditActivity", "=== Opening attachment ===")
         android.util.Log.d("TicketEditActivity", "tempTicket: ${tempTicket?.id}")
         android.util.Log.d("TicketEditActivity", "currentTicket: ${currentTicket?.id}")
         android.util.Log.d("TicketEditActivity", "ticketToOpen: ${ticketToOpen?.id}")
-        android.util.Log.d("TicketEditActivity", "PDF file path: ${ticketToOpen?.pdfFilePath}")
-        android.util.Log.d("TicketEditActivity", "PDF URI: ${ticketToOpen?.pdfUri}")
+        android.util.Log.d("TicketEditActivity", "File type: ${ticketToOpen?.fileType}")
 
         ticketToOpen?.let { ticket ->
-            // First, try to open saved copy from internal storage
-            ticket.pdfFilePath?.let { filePath ->
-                val file = File(filePath)
-                android.util.Log.d("TicketEditActivity", "Checking file exists: ${file.exists()}")
-                android.util.Log.d("TicketEditActivity", "File absolute path: ${file.absolutePath}")
-                android.util.Log.d("TicketEditActivity", "File length: ${if (file.exists()) file.length() else "N/A"}")
-
-                if (file.exists()) {
-                    try {
-                        val uri = androidx.core.content.FileProvider.getUriForFile(
-                            this,
-                            "${packageName}.fileprovider",
-                            file
-                        )
-                        android.util.Log.d("TicketEditActivity", "FileProvider URI: $uri")
-
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, "application/pdf")
-                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        }
-
-                        if (intent.resolveActivity(packageManager) != null) {
-                            startActivity(intent)
-                            return
-                        } else {
-                            android.util.Log.e("TicketEditActivity", "No app can handle PDF intent")
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e("TicketEditActivity", "Error opening internal PDF file: $filePath", e)
-                        // Fallback to original URI
-                    }
-                } else {
-                    android.util.Log.w("TicketEditActivity", "PDF file does not exist at: $filePath")
-                }
+            when (ticket.fileType) {
+                Ticket.FileType.PDF -> openPdfAttachment(ticket)
+                Ticket.FileType.IMAGE -> openImageAttachment(ticket)
             }
+        } ?: run {
+            android.util.Log.w("TicketEditActivity", "No ticket available")
+            Toast.makeText(this, getString(R.string.attachment_open_error, "No ticket"), Toast.LENGTH_SHORT).show()
+        }
+    }
 
-            // Fallback: try original URI
-            ticket.pdfUri?.let { uriString ->
-                android.util.Log.d("TicketEditActivity", "Trying fallback URI: $uriString")
+    private fun openPdfAttachment(ticket: Ticket) {
+        // First, try to open saved copy from internal storage
+        ticket.pdfFilePath?.let { filePath ->
+            val file = File(filePath)
+            if (file.exists()) {
                 try {
-                    val uri = Uri.parse(uriString)
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        this,
+                        "${packageName}.fileprovider",
+                        file
+                    )
+
                     val intent = Intent(Intent.ACTION_VIEW).apply {
                         setDataAndType(uri, "application/pdf")
                         flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -451,20 +469,82 @@ class TicketEditActivity : BaseActivity() {
 
                     if (intent.resolveActivity(packageManager) != null) {
                         startActivity(intent)
-                    } else {
-                        Toast.makeText(this, getString(R.string.no_app_to_open_pdf), Toast.LENGTH_SHORT).show()
+                        return
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("TicketEditActivity", "Error opening PDF from URI: $uriString", e)
-                    Toast.makeText(this, getString(R.string.pdf_open_error, e.message), Toast.LENGTH_SHORT).show()
+                    android.util.Log.e("TicketEditActivity", "Error opening internal PDF file", e)
                 }
-            } ?: run {
-                android.util.Log.w("TicketEditActivity", "No PDF URI available")
-                Toast.makeText(this, getString(R.string.pdf_not_found), Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Fallback: try original URI
+        ticket.pdfUri?.let { uriString ->
+            try {
+                val uri = Uri.parse(uriString)
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/pdf")
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+
+                if (intent.resolveActivity(packageManager) != null) {
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(this, getString(R.string.no_app_to_open_pdf), Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, getString(R.string.pdf_open_error, e.message), Toast.LENGTH_SHORT).show()
             }
         } ?: run {
-            android.util.Log.w("TicketEditActivity", "No ticket available")
             Toast.makeText(this, getString(R.string.pdf_not_found), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openImageAttachment(ticket: Ticket) {
+        // First, try to open saved copy from internal storage
+        ticket.imageFilePath?.let { filePath ->
+            val file = File(filePath)
+            if (file.exists()) {
+                try {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        this,
+                        "${packageName}.fileprovider",
+                        file
+                    )
+
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "image/*")
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    }
+
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent)
+                        return
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("TicketEditActivity", "Error opening internal image file", e)
+                }
+            }
+        }
+
+        // Fallback: try original URI
+        ticket.imageUri?.let { uriString ->
+            try {
+                val uri = Uri.parse(uriString)
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "image/*")
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+
+                if (intent.resolveActivity(packageManager) != null) {
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(this, getString(R.string.no_app_to_open_image), Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, getString(R.string.image_open_error, e.message), Toast.LENGTH_SHORT).show()
+            }
+        } ?: run {
+            Toast.makeText(this, getString(R.string.image_not_found), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -472,44 +552,49 @@ class TicketEditActivity : BaseActivity() {
         val ticketToModify = currentTicket ?: tempTicket
 
         if (ticketToModify != null) {
-            // For existing tickets - check if there's a PDF file
-            val hasPdf = !ticketToModify.pdfUri.isNullOrEmpty() ||
-                        (!ticketToModify.pdfFilePath.isNullOrEmpty() && File(ticketToModify.pdfFilePath).exists())
+            // For existing tickets - check if there's any attachment
+            val hasAttachment = ticketToModify.hasAttachment()
 
-            if (hasPdf) {
-                // If PDF exists, show replacement confirmation dialog
+            if (hasAttachment) {
+                // If attachment exists, show replacement confirmation dialog
                 AlertDialog.Builder(this)
-                    .setTitle(getString(R.string.replace_pdf_file))
-                    .setMessage(getString(R.string.replace_pdf_confirmation))
+                    .setTitle(getString(R.string.replace_attachment))
+                    .setMessage(getString(R.string.replace_attachment_confirmation))
                     .setPositiveButton(getString(R.string.replace)) { _, _ ->
-                        selectReplacementPdfLauncher.launch("application/pdf")
+                        // Open file selector for any supported file type
+                        selectReplacementFileLauncher.launch("*/*")
                     }
                     .setNegativeButton(getString(R.string.cancel), null)
                     .show()
             } else {
-                // If no PDF, open selector directly
-                selectReplacementPdfLauncher.launch("application/pdf")
+                // If no attachment, open file selector directly
+                selectReplacementFileLauncher.launch("*/*")
             }
         } else {
-            // For new tickets - open selector directly to add PDF
-            selectReplacementPdfLauncher.launch("application/pdf")
+            // For new tickets - open file selector directly
+            selectReplacementFileLauncher.launch("*/*")
         }
     }
 
-    private fun replacePdfFile(uri: Uri) {
-        // Get new PDF file name
+    private fun processSelectedFile(uri: Uri) {
+        // Get new file name and determine file type
         val newFileName = getFileNameFromUri(uri)
+        val mimeType = contentResolver.getType(uri)
+
+        android.util.Log.d("TicketEditActivity", "Processing file: $newFileName, MIME type: $mimeType, URI: $uri")
 
         if (newFileName != null) {
-            // Check if new PDF file is not used in other tickets
+            // Check if new file is not used in other tickets
             val allTickets = TicketsRepository.getAllTickets()
             val duplicateTicket = allTickets.find { otherTicket ->
                 // Skip current ticket when checking (if it exists)
                 if (currentTicket != null && otherTicket.id == currentTicket!!.id) return@find false
 
-                // Check filename from pdfFilePath or pdfUri
+                // Check filename from pdfFilePath, pdfUri, imageFilePath or imageUri
                 val existingFileName = otherTicket.pdfFilePath?.let { File(it).name }
                     ?: otherTicket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                    ?: otherTicket.imageFilePath?.let { File(it).name }
+                    ?: otherTicket.imageUri?.let { getFileNameFromUri(Uri.parse(it)) }
 
                 existingFileName != null && existingFileName == newFileName
             }
@@ -517,64 +602,115 @@ class TicketEditActivity : BaseActivity() {
             if (duplicateTicket != null) {
                 Toast.makeText(
                     this,
-                    getString(R.string.pdf_already_used, duplicateTicket.title),
+                    getString(R.string.file_already_used, duplicateTicket.title),
                     Toast.LENGTH_LONG
                 ).show()
                 // Re-open selector
-                selectReplacementPdfLauncher.launch("application/pdf")
+                selectReplacementFileLauncher.launch("*/*")
                 return
             }
         }
 
         try {
-            // Save new PDF file
-            val savedPdfPath = savePdfToInternalStorage(uri)
+            // Determine file type using MIME type and extension
+            val isPdf = mimeType == "application/pdf" ||
+                       newFileName?.endsWith(".pdf", ignoreCase = true) == true
+            val isImage = mimeType?.startsWith("image/") == true ||
+                         newFileName?.let { name ->
+                             name.endsWith(".jpg", ignoreCase = true) ||
+                             name.endsWith(".jpeg", ignoreCase = true) ||
+                             name.endsWith(".png", ignoreCase = true) ||
+                             name.endsWith(".gif", ignoreCase = true) ||
+                             name.endsWith(".webp", ignoreCase = true)
+                         } == true
+
+            android.util.Log.d("TicketEditActivity", "Copy file type determined: isPdf=$isPdf, isImage=$isImage, mimeType=$mimeType, fileName=$newFileName")
+
+            if (!isPdf && !isImage) {
+                Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_LONG).show()
+                return
+            }
+
+            // Save new file based on determined type
+            val savedFilePath = if (isPdf) {
+                savePdfToInternalStorage(uri)
+            } else {
+                saveImageToInternalStorage(uri)
+            }
+
+            // Get form data for ticket creation
+            val formTitle = editTitle.text.toString().trim()
+            val formVenue = editVenue.text.toString().trim().takeIf { it.isNotEmpty() }
+            val formEventDate = if (editDate.text.toString().trim().isNotEmpty()) {
+                selectedDate.time
+            } else {
+                null
+            }
 
             if (currentTicket != null) {
-                // For existing tickets - DON'T save to database immediately, create temporary
-                val updatedTicket = currentTicket!!.copy(
-                    pdfUri = uri.toString(),
-                    pdfFilePath = savedPdfPath
-                )
-                tempTicket = updatedTicket
-                Toast.makeText(this, getString(R.string.pdf_attached_ready_to_save), Toast.LENGTH_SHORT).show()
-            } else {
-                // For new tickets - DON'T save to database, only create temporary ticket
-                val title = editTitle.text.toString().trim().takeIf { it.isNotEmpty() }
-                    ?: getString(R.string.ticket_title_placeholder)
-                val venue = editVenue.text.toString().trim().takeIf { it.isNotEmpty() }
-                val eventDate = if (editDate.text.toString().trim().isNotEmpty()) {
-                    selectedDate.time
+                // For existing tickets - create temporary ticket with correct file type
+                val updatedTicket = if (isPdf) {
+                    currentTicket!!.copy(
+                        pdfUri = uri.toString(),
+                        pdfFilePath = savedFilePath,
+                        fileType = Ticket.FileType.PDF,
+                        // Clear image fields when setting PDF
+                        imageUri = null,
+                        imageFilePath = null
+                    )
                 } else {
-                    null
+                    currentTicket!!.copy(
+                        imageUri = uri.toString(),
+                        imageFilePath = savedFilePath,
+                        fileType = Ticket.FileType.IMAGE,
+                        // Clear PDF fields when setting image
+                        pdfUri = null,
+                        pdfFilePath = null
+                    )
                 }
-
-                val newTicket = Ticket(
-                    title = title,
-                    description = getString(R.string.manually_created_ticket),
-                    venue = venue,
-                    eventDate = eventDate,
-                    pdfUri = uri.toString(),
-                    pdfFilePath = savedPdfPath
-                )
+                tempTicket = updatedTicket
+                Toast.makeText(this, getString(R.string.file_attached_ready_to_save), Toast.LENGTH_SHORT).show()
+            } else {
+                // For new tickets - create temporary ticket with correct file type
+                val newTicket = if (isPdf) {
+                    Ticket(
+                        title = formTitle.takeIf { it.isNotEmpty() } ?: getString(R.string.ticket_title_placeholder),
+                        description = getString(R.string.manually_created_ticket),
+                        venue = formVenue,
+                        eventDate = formEventDate,
+                        pdfUri = uri.toString(),
+                        pdfFilePath = savedFilePath,
+                        fileType = Ticket.FileType.PDF
+                    )
+                } else {
+                    Ticket(
+                        title = formTitle.takeIf { it.isNotEmpty() } ?: getString(R.string.ticket_title_placeholder),
+                        description = getString(R.string.manually_created_ticket),
+                        venue = formVenue,
+                        eventDate = formEventDate,
+                        imageUri = uri.toString(),
+                        imageFilePath = savedFilePath,
+                        fileType = Ticket.FileType.IMAGE
+                    )
+                }
 
                 tempTicket = newTicket
                 supportActionBar?.title = getString(R.string.edit_ticket)
-                Toast.makeText(this, getString(R.string.pdf_attached_ready_to_save), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.file_attached_ready_to_save), Toast.LENGTH_SHORT).show()
             }
 
-            // Activate PDF buttons
+            // Activate file buttons
             buttonOpen.isEnabled = true
             buttonOpen.alpha = 1.0f
             buttonReplace.isEnabled = true
             buttonReplace.alpha = 1.0f
-
         } catch (e: Exception) {
-            Toast.makeText(this, getString(R.string.pdf_replacement_error, e.message), Toast.LENGTH_SHORT).show()
+            android.util.Log.e("TicketEditActivity", "Error processing file", e)
+            Toast.makeText(this, getString(R.string.file_replacement_error, e.message), Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun validateAndSetCopyPdf(uri: Uri) {
+    private fun validateAndSetCopyFile(uri: Uri) {
         copyFromTicketId?.let { copyId ->
             val templateTicket = TicketsRepository.getTicketById(copyId)
             templateTicket?.let { originalTicket ->
@@ -582,12 +718,14 @@ class TicketEditActivity : BaseActivity() {
                 val newFileName = getFileNameFromUri(uri)
 
                 if (newFileName != null) {
-                    // Check if new PDF file is not used in other tickets
+                    // Check if new file is not used in other tickets
                     val allTickets = TicketsRepository.getAllTickets()
                     val duplicateTicket = allTickets.find { ticket ->
-                        // Check filename from pdfFilePath
+                        // Check filename from pdfFilePath, pdfUri, imageFilePath or imageUri
                         val existingFileName = ticket.pdfFilePath?.let { File(it).name }
                             ?: ticket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                            ?: ticket.imageFilePath?.let { File(it).name }
+                            ?: ticket.imageUri?.let { getFileNameFromUri(Uri.parse(it)) }
 
                         existingFileName != null && existingFileName == newFileName
                     }
@@ -595,18 +733,41 @@ class TicketEditActivity : BaseActivity() {
                     if (duplicateTicket != null) {
                         Toast.makeText(
                             this,
-                            getString(R.string.pdf_already_used, duplicateTicket.title),
+                            getString(R.string.file_already_used, duplicateTicket.title),
                             Toast.LENGTH_LONG
                         ).show()
                         // Re-open selector
-                        selectCopyPdfLauncher.launch("application/pdf")
+                        selectCopyFileLauncher.launch("*/*")
                         return
                     }
                 }
 
                 try {
-                    // Save new PDF file
-                    val savedPdfPath = savePdfToInternalStorage(uri)
+                    // Determine file type using MIME type and extension (same logic as processSelectedFile)
+                    val mimeType = contentResolver.getType(uri)
+                    val isPdf = mimeType == "application/pdf" ||
+                               newFileName?.endsWith(".pdf", ignoreCase = true) == true
+                    val isImage = mimeType?.startsWith("image/") == true ||
+                                 newFileName?.let { name ->
+                                     name.endsWith(".jpg", ignoreCase = true) ||
+                                     name.endsWith(".jpeg", ignoreCase = true) ||
+                                     name.endsWith(".png", ignoreCase = true) ||
+                                     name.endsWith(".gif", ignoreCase = true) ||
+                                     name.endsWith(".webp", ignoreCase = true)
+                                 } == true
+
+                    if (!isPdf && !isImage) {
+                        Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_LONG).show()
+                        selectCopyFileLauncher.launch("*/*")
+                        return
+                    }
+
+                    // Save new file based on determined type
+                    val savedFilePath = if (isPdf) {
+                        savePdfToInternalStorage(uri)
+                    } else {
+                        saveImageToInternalStorage(uri)
+                    }
 
                     // Create new ticket with copied data, but DON'T save to database
                     val title = editTitle.text.toString().trim()
@@ -617,34 +778,53 @@ class TicketEditActivity : BaseActivity() {
                         null
                     }
 
-                    val newTicket = Ticket(
-                        title = title,
-                        description = originalTicket.description,
-                        venue = venue,
-                        eventDate = eventDate,
-                        price = originalTicket.price,
-                        seatInfo = originalTicket.seatInfo,
-                        qrCode = originalTicket.qrCode,
-                        barcode = originalTicket.barcode,
-                        pdfUri = uri.toString(),
-                        pdfFilePath = savedPdfPath
-                    )
+                    val newTicket = if (isPdf) {
+                        // PDF file
+                        Ticket(
+                            title = title,
+                            description = originalTicket.description,
+                            venue = venue,
+                            eventDate = eventDate,
+                            price = originalTicket.price,
+                            seatInfo = originalTicket.seatInfo,
+                            qrCode = originalTicket.qrCode,
+                            barcode = originalTicket.barcode,
+                            pdfUri = uri.toString(),
+                            pdfFilePath = savedFilePath,
+                            fileType = Ticket.FileType.PDF
+                        )
+                    } else {
+                        // Image file
+                        Ticket(
+                            title = title,
+                            description = originalTicket.description,
+                            venue = venue,
+                            eventDate = eventDate,
+                            price = originalTicket.price,
+                            seatInfo = originalTicket.seatInfo,
+                            qrCode = originalTicket.qrCode,
+                            barcode = originalTicket.barcode,
+                            imageUri = uri.toString(),
+                            imageFilePath = savedFilePath,
+                            fileType = Ticket.FileType.IMAGE
+                        )
+                    }
 
-                    // Activate PDF buttons
+                    // Activate attachment buttons
                     buttonOpen.isEnabled = true
                     buttonOpen.alpha = 1.0f
                     buttonReplace.isEnabled = true
                     buttonReplace.alpha = 1.0f
 
-                    // Save ticket as temporary for PDF viewing, but not in database
+                    // Save ticket as temporary for viewing, but not in database
                     tempTicket = newTicket
                     copyFromTicketId = null // Clear copyFromTicketId
 
                     // Update title
                     supportActionBar?.title = getString(R.string.edit_ticket)
-                    Toast.makeText(this, getString(R.string.pdf_attached_ready_to_save), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.file_attached_ready_to_save), Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
-                    Toast.makeText(this, getString(R.string.pdf_save_error, e.message), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.file_save_error, e.message), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -700,6 +880,72 @@ class TicketEditActivity : BaseActivity() {
             android.util.Log.e("TicketEditActivity", "Error saving PDF to internal storage", e)
             e.printStackTrace()
             null
+        }
+    }
+
+    private fun saveImageToInternalStorage(uri: Uri): String? {
+        return try {
+            android.util.Log.d("TicketEditActivity", "=== Saving image to internal storage ===")
+            android.util.Log.d("TicketEditActivity", "Source URI: $uri")
+
+            // Create folder for image files in internal storage
+            val imageDir = File(filesDir, "image_tickets")
+            if (!imageDir.exists()) {
+                val created = imageDir.mkdirs()
+                android.util.Log.d("TicketEditActivity", "Created image directory: $created")
+            }
+
+            // Generate unique filename
+            val fileName = "ticket_${UUID.randomUUID()}.jpg"
+            val destinationFile = File(imageDir, fileName)
+            android.util.Log.d("TicketEditActivity", "Destination file: ${destinationFile.absolutePath}")
+
+            // Copy file
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                destinationFile.outputStream().use { outputStream ->
+                    val bytesCopied = inputStream.copyTo(outputStream)
+                    android.util.Log.d("TicketEditActivity", "Copied $bytesCopied bytes")
+                }
+            }
+
+            val finalPath = destinationFile.absolutePath
+            android.util.Log.d("TicketEditActivity", "File saved successfully: $finalPath")
+            android.util.Log.d("TicketEditActivity", "File exists: ${destinationFile.exists()}")
+            android.util.Log.d("TicketEditActivity", "File size: ${destinationFile.length()}")
+
+            finalPath
+        } catch (e: Exception) {
+            android.util.Log.e("TicketEditActivity", "Error saving image to internal storage", e)
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun updateButtonStates() {
+        val ticketToCheck = tempTicket ?: currentTicket
+
+        android.util.Log.d("TicketEditActivity", "=== Updating button states ===")
+        android.util.Log.d("TicketEditActivity", "tempTicket: ${tempTicket?.id}")
+        android.util.Log.d("TicketEditActivity", "currentTicket: ${currentTicket?.id}")
+        android.util.Log.d("TicketEditActivity", "copyFromTicketId: $copyFromTicketId")
+
+        if (copyFromTicketId != null) {
+            // During copy operation - buttons should be disabled until file is selected
+            buttonOpen.isEnabled = false
+            buttonOpen.alpha = 0.5f
+            buttonReplace.isEnabled = false
+            buttonReplace.alpha = 0.5f
+            android.util.Log.d("TicketEditActivity", "Copy mode - buttons disabled")
+        } else {
+            // Normal mode - check if ticket has attachment
+            val hasAttachment = ticketToCheck?.hasAttachment() ?: false
+
+            buttonOpen.isEnabled = hasAttachment
+            buttonOpen.alpha = if (hasAttachment) 1.0f else 0.5f
+            buttonReplace.isEnabled = true
+            buttonReplace.alpha = 1.0f
+
+            android.util.Log.d("TicketEditActivity", "Normal mode - hasAttachment: $hasAttachment")
         }
     }
 
@@ -779,6 +1025,23 @@ class TicketEditActivity : BaseActivity() {
                 // Ignore cleanup errors
             }
         }
+
+        // Delete temporary image file if it exists
+        tempTicket?.imageFilePath?.let { filePath ->
+            try {
+                val file = File(filePath)
+                if (file.exists()) {
+                    // Check if this is not the original file of existing ticket
+                    val isOriginalFile = currentTicket?.imageFilePath == filePath
+                    if (!isOriginalFile) {
+                        file.delete()
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore cleanup errors
+            }
+        }
+
         tempTicket = null
     }
 }

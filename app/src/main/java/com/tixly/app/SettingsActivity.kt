@@ -236,8 +236,8 @@ class SettingsActivity : BaseActivity() {
         val config = resources.configuration
         config.setLocale(locale)
 
-        val context = createConfigurationContext(config)
-        resources.updateConfiguration(config, resources.displayMetrics)
+        // Apply configuration without using deprecated updateConfiguration
+        createConfigurationContext(config)
     }
 
     // Schedule notifications based on current settings

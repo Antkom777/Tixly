@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import com.tixly.app.utils.SettingsManager
 import com.tixly.app.utils.NotificationHelper
+import com.tixly.app.utils.AdManager
 import java.util.*
 
 class TixlyApplication : Application() {
@@ -16,6 +17,9 @@ class TixlyApplication : Application() {
 
         // Initialize notification channels
         NotificationHelper.createNotificationChannel(this)
+
+        // Initialize AdMob SDK
+        AdManager.initialize(this)
     }
 
     override fun attachBaseContext(base: Context) {
@@ -48,6 +52,7 @@ class TixlyApplication : Application() {
         val configuration = Configuration()
         configuration.setLocale(locale)
 
-        resources.updateConfiguration(configuration, resources.displayMetrics)
+        // Apply configuration without using deprecated updateConfiguration
+        createConfigurationContext(configuration)
     }
 }

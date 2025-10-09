@@ -81,7 +81,7 @@
                 android:layout_margin="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_view"
-                android:contentDescription="@string/open_pdf_desc"
+                android:contentDescription="@string/open_attachment_desc"
                 android:padding="12dp"
                 android:layout_weight="1" />
 
@@ -93,7 +93,7 @@
                 android:layout_margin="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_rotate"
-                android:contentDescription="@string/replace_pdf_desc"
+                android:contentDescription="@string/replace_attachment_desc"
                 android:padding="12dp"
                 android:layout_weight="1" />
 

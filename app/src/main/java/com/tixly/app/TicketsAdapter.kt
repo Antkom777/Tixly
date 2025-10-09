@@ -58,20 +58,25 @@ class TicketsAdapter(
             }
             textVenue.text = ticket.venue ?: itemView.context.getString(R.string.venue_not_specified)
 
-            // Check if there's an attached PDF file - FIX: adding detailed check
-            val hasPdf = when {
-                // First check saved file
+            // Check if there's an attached file (PDF or image)
+            val hasAttachment = when {
+                // Check for PDF file
                 !ticket.pdfFilePath.isNullOrEmpty() -> {
                     val file = File(ticket.pdfFilePath)
                     file.exists()
                 }
-                // Then check original URI
                 !ticket.pdfUri.isNullOrEmpty() -> true
+                // Check for image file
+                !ticket.imageFilePath.isNullOrEmpty() -> {
+                    val file = File(ticket.imageFilePath)
+                    file.exists()
+                }
+                !ticket.imageUri.isNullOrEmpty() -> true
                 else -> false
             }
 
-            buttonOpen.isEnabled = hasPdf
-            buttonOpen.alpha = if (hasPdf) 1.0f else 0.5f // Visually show inactive state
+            buttonOpen.isEnabled = hasAttachment
+            buttonOpen.alpha = if (hasAttachment) 1.0f else 0.5f // Visually show inactive state
 
             // Highlight tickets based on status
             when {
@@ -107,7 +112,7 @@ class TicketsAdapter(
             }
 
             buttonOpen.setOnClickListener {
-                if (hasPdf) {
+                if (hasAttachment) {
                     onOpenClick(ticket)
                 }
             }

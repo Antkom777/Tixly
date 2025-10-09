@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import com.tixly.app.utils.PDFProcessor
+import com.tixly.app.utils.ImageProcessor
 import com.tixly.app.data.TicketsRepository
 import java.io.File
 import kotlin.system.exitProcess
@@ -14,6 +15,7 @@ import kotlin.system.exitProcess
 class MainActivity : BaseActivity() {
 
     private lateinit var pdfProcessor: PDFProcessor
+    private lateinit var imageProcessor: ImageProcessor
 
     // Launcher for selecting PDF file
     private val selectPdfLauncher = registerForActivityResult(
@@ -26,6 +28,7 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
 
         pdfProcessor = PDFProcessor(this)
+        imageProcessor = ImageProcessor(this)
 
         // Initialize repository with context
         TicketsRepository.initialize(this)
@@ -72,26 +75,48 @@ class MainActivity : BaseActivity() {
     private fun handleIncomingIntent(intent: Intent): Boolean {
         when (intent.action) {
             Intent.ACTION_SEND -> {
-                if (intent.type == "application/pdf") {
-                    val pdfUri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                    }
-                    pdfUri?.let { uri ->
-                        Toast.makeText(this, getString(R.string.pdf_received_via_share), Toast.LENGTH_SHORT).show()
-                        processPdfFile(uri)
-                        return true
+                val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                }
+
+                uri?.let {
+                    when {
+                        intent.type == "application/pdf" -> {
+                            Toast.makeText(this, getString(R.string.pdf_received_via_share), Toast.LENGTH_SHORT).show()
+                            processPdfFile(it)
+                        }
+                        intent.type?.startsWith("image/") == true -> {
+                            Toast.makeText(this, getString(R.string.image_received_via_share), Toast.LENGTH_SHORT).show()
+                            processImageFile(it)
+                        }
+                        else -> {
+                            // Unsupported file type
+                            Toast.makeText(this, getString(R.string.failed_to_process_file), Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
             Intent.ACTION_VIEW -> {
-                if (intent.type == "application/pdf") {
-                    intent.data?.let { uri ->
-                        Toast.makeText(this, getString(R.string.pdf_opened_in_app), Toast.LENGTH_SHORT).show()
-                        processPdfFile(uri)
-                        return true
+                intent.data?.let { uri ->
+                    when {
+                        intent.type == "application/pdf" -> {
+                            Toast.makeText(this, getString(R.string.pdf_opened_in_app), Toast.LENGTH_SHORT).show()
+                            processPdfFile(uri)
+                            return true
+                        }
+                        intent.type?.startsWith("image/") == true -> {
+                            Toast.makeText(this, getString(R.string.image_opened_in_app), Toast.LENGTH_SHORT).show()
+                            processImageFile(uri)
+                            return true
+                        }
+                        else -> {
+                            // Unsupported file type
+                            Toast.makeText(this, getString(R.string.failed_to_process_file), Toast.LENGTH_SHORT).show()
+                            return false
+                        }
                     }
                 }
             }
@@ -119,9 +144,9 @@ class MainActivity : BaseActivity() {
                 val fileName = getFileNameFromUri(uri)
                 if (fileName != null) {
                     val allTickets = TicketsRepository.getAllTickets()
-                    val duplicateTicket = allTickets.find { ticket ->
-                        val existingFileName = ticket.pdfFilePath?.let { File(it).name }
-                            ?: ticket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                    val duplicateTicket = allTickets.find { existingTicket ->
+                        val existingFileName = existingTicket.pdfFilePath?.let { File(it).name }
+                            ?: existingTicket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
                         existingFileName != null && existingFileName == fileName
                     }
 
@@ -148,6 +173,36 @@ class MainActivity : BaseActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.pdf_processing_error, e.message), Toast.LENGTH_LONG).show()
             e.printStackTrace()
+        }
+    }
+
+    private fun processImageFile(uri: Uri) {
+        Toast.makeText(this, getString(R.string.processing_image), Toast.LENGTH_SHORT).show()
+
+        try {
+            val ticket = imageProcessor.processImage(uri)
+            if (ticket != null) {
+                // Image processed and ticket created
+                Toast.makeText(this, getString(R.string.image_processed_successfully), Toast.LENGTH_LONG).show()
+
+                // Open editing screen with new ticket
+                val intent = Intent(this, TicketEditActivity::class.java)
+                intent.putExtra("TICKET_ID", ticket.id)
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, getString(R.string.failed_to_process_image), Toast.LENGTH_LONG).show()
+                // Go to tickets list
+                val intent = Intent(this, TicketsActivity::class.java)
+                startActivity(intent)
+                finish()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, getString(R.string.image_processing_error, e.message), Toast.LENGTH_LONG).show()
+            e.printStackTrace()
+            // Go to tickets list
+            val intent = Intent(this, TicketsActivity::class.java)
+            startActivity(intent)
+            finish()
         }
     }
 

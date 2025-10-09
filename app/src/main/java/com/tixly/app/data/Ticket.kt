@@ -16,8 +16,27 @@ data class Ticket(
     val barcode: String? = null,
     val createdDate: Date = Date(),
     val pdfFilePath: String? = null,
-    val pdfUri: String? = null // Add URI for opening PDF
+    val pdfUri: String? = null, // Add URI for opening PDF
+    val imageFilePath: String? = null, // Add support for image files
+    val imageUri: String? = null, // Add URI for opening images
+    val fileType: FileType = FileType.PDF // Track file type
 ) {
+
+    enum class FileType {
+        PDF, IMAGE
+    }
+
+    fun hasAttachment(): Boolean {
+        return !pdfFilePath.isNullOrEmpty() || !imageFilePath.isNullOrEmpty()
+    }
+
+    fun getAttachmentPath(): String? {
+        return when (fileType) {
+            FileType.PDF -> pdfFilePath
+            FileType.IMAGE -> imageFilePath
+        }
+    }
+
     fun getFormattedEventDate(): String {
         return eventDate?.let {
             SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(it)
@@ -46,6 +65,9 @@ data class Ticket(
         json.put("createdDate", createdDate.time)
         json.put("pdfFilePath", pdfFilePath)
         json.put("pdfUri", pdfUri)
+        json.put("imageFilePath", imageFilePath)
+        json.put("imageUri", imageUri)
+        json.put("fileType", fileType.name)
         return json.toString()
     }
 
@@ -64,7 +86,10 @@ data class Ticket(
                 barcode = if (json.has("barcode") && !json.isNull("barcode")) json.getString("barcode") else null,
                 createdDate = Date(json.getLong("createdDate")),
                 pdfFilePath = if (json.has("pdfFilePath") && !json.isNull("pdfFilePath")) json.getString("pdfFilePath") else null,
-                pdfUri = if (json.has("pdfUri") && !json.isNull("pdfUri")) json.getString("pdfUri") else null
+                pdfUri = if (json.has("pdfUri") && !json.isNull("pdfUri")) json.getString("pdfUri") else null,
+                imageFilePath = if (json.has("imageFilePath") && !json.isNull("imageFilePath")) json.getString("imageFilePath") else null,
+                imageUri = if (json.has("imageUri") && !json.isNull("imageUri")) json.getString("imageUri") else null,
+                fileType = FileType.valueOf(json.getString("fileType"))
             )
         }
     }

@@ -18,36 +18,16 @@
             android:clipToPadding="false"
             android:paddingBottom="80dp" />
 
-        <!-- Ad banner section at the bottom -->
+        <!-- Ad banner section at the bottom - container for AdMob ads -->
         <LinearLayout
             android:id="@+id/layoutAdBanner"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
+            android:layout_height="wrap_content"
+            android:minHeight="50dp"
+            android:layout_gravity="center_horizontal"
+            android:orientation="vertical"
             android:background="#F0F0F0"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:padding="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/ad_banner"
-                android:textColor="#666666"
-                android:textSize="14sp" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Google Ads"
-                android:textColor="#4285F4"
-                android:textSize="12sp" />
-
-        </LinearLayout>
+            android:visibility="visible" />
 
     </LinearLayout>
 
