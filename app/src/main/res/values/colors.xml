@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Primary app colors -->
+    <color name="colorPrimary">#FF6200EE</color>
+    <color name="colorPrimaryDark">#FF3700B3</color>
+    <color name="colorAccent">#FF03DAC5</color>
+
     <!-- Pale green color for buttons -->
     <color name="pale_green">#C8E6C9</color>
     <color name="pale_green_pressed">#A5D6A7</color>

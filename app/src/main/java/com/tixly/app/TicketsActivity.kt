@@ -50,13 +50,19 @@ class TicketsActivity : BaseActivity() {
         uri?.let { processImageFile(it) }
     }
 
-    // Launcher for settings activity
+    // Launcher for Settings activity to handle premium purchase results
     private val settingsLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            // Language was changed, recreate activity
-            recreate()
+            // Settings changed (language or premium purchase)
+            updateAdBannerVisibility()
+
+            // Check if language changed and recreate if needed
+            val newLanguage = settingsManager.getLanguage()
+            if (newLanguage != currentLanguage) {
+                recreate()
+            }
         }
     }
 

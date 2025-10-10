@@ -10,8 +10,6 @@ import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.initialization.InitializationStatus
-import com.google.android.gms.ads.initialization.OnInitializationCompleteListener
 
 /**
  * Manager for handling Google AdMob advertisements
@@ -50,13 +48,37 @@ object AdManager {
     }
 
     /**
-     * Create and load a banner ad view
+     * Check if ads should be shown based on user's premium status
+     */
+    fun shouldShowAds(context: Context): Boolean {
+        val settingsManager = SettingsManager(context)
+        val adsRemoved = settingsManager.getAdsRemoved()
+        Log.d(TAG, "Checking if ads should be shown. Ads removed: $adsRemoved")
+        return !adsRemoved
+    }
+
+    /**
+     * Create and load banner ad in the provided container (alias for loadBannerAd)
      */
     fun createBannerAd(context: Context, adContainer: LinearLayout): AdView? {
-        Log.d(TAG, "Creating banner ad...")
-        Log.d(TAG, "AdMob initialized: $isInitialized")
+        return loadBannerAd(context, adContainer)
+    }
 
-        // Show container first to avoid layout issues
+    /**
+     * Load and display banner ad in the provided container
+     * Returns null if ads are disabled (premium user)
+     */
+    fun loadBannerAd(context: Context, adContainer: LinearLayout): AdView? {
+        Log.d(TAG, "Loading banner ad...")
+
+        // Check if user has premium status (ads removed)
+        if (!shouldShowAds(context)) {
+            Log.d(TAG, "User has premium status, hiding ad container")
+            adContainer.visibility = View.GONE
+            return null
+        }
+
+        // Show ad container for non-premium users
         adContainer.visibility = View.VISIBLE
 
         val adView = AdView(context).apply {
@@ -126,21 +148,11 @@ object AdManager {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 (50 * context.resources.displayMetrics.density).toInt()
             )
-            setBackgroundColor(android.graphics.Color.parseColor("#F0F0F0"))
+            setBackgroundColor(-0x0f0f10) // #F0F0F0
         }
 
         adContainer.addView(placeholderView)
         adContainer.visibility = View.VISIBLE
-    }
-
-    /**
-     * Check if ads should be shown (based on user settings)
-     */
-    fun shouldShowAds(context: Context): Boolean {
-        val settingsManager = SettingsManager(context)
-        val adsRemoved = settingsManager.getAdsRemoved()
-        Log.d(TAG, "Should show ads: ${!adsRemoved}")
-        return !adsRemoved
     }
 
     /**

@@ -16,6 +16,10 @@
 
     <string name="remove_ads_setting">Відключити рекламу</string>
     <string name="remove_ads_message">Дякую за підтримку!</string>
+    <string name="app_status_section">Статус додатка</string>
+    <string name="app_status_label">Статус додатка:</string>
+    <string name="status_free">Безкоштовна</string>
+    <string name="status_premium">Преміум</string>
 
     <string name="time_1_hour">За 1 годину</string>
     <string name="time_2_hours">За 2 години</string>
@@ -149,22 +153,37 @@
         • Оберіть "Tixly" зі списку додатків\n
         • Квиток відкриється для редагування\n
         • Заповніть назву, місце та дату події\n
-        • Натисніть 💾 для збереження\n\n
-        📱 ПЕРЕГЛЯД І РЕДАГУВАННЯ КВИТКІВ:\n
-        • 🖊️ - редагування квитка\n
-        • 👁 - перегляд файлу з квитком\n\n
-        📋 КОПІЮВАННЯ КВИТКІВ:\n
-        • Натисніть ⊕ на квитку\n
-        • Назва, місце і дата події будуть скопійовані\n
-        • Виберіть новий файл квитка для копії - 🔄\n
-        • Натисніть 💾 для збереження\n\n
+        • Натисніть ❌ для скасування або 💾 для збереження\n\n
         🔔 НАГАДУВАННЯ:\n
-        • Увімкніть нагадування в налаштуваннях\n
-        • Оберіть час сповіщення (від 1 години до 1 тижня)\n
-        • Отримуйте нагадування про майбутні події\n\n
-        ⚙️ НАЛАШТУВАННЯ:\n
-        • Змініть мову додатка\n
-        • Налаштуйте нагадування\n
-        • Відключіть рекламу
+        • У налаштуваннях увімкніть сповіщення\n
+        • Оберіть час нагадування (1 год - 1 тиждень)\n
+        • Додаток нагадає про події заздалегідь\n\n
+        📱 ДОДАТКОВІ ФУНКЦІЇ:\n
+        • Редагуйте квитки натиснувши на них\n
+        • Видаляйте непотрібні квитки\n
+        • Змінюйте мову додатку в налаштуваннях\n
+        • Відключіть рекламу для більшого комфорту
     </string>
+
+    <!-- Google Play Billing strings -->
+    <string name="loading">Завантаження...</string>
+    <string name="checking_purchase_status">Перевірка статусу покупки...</string>
+    <string name="processing_purchase">Обробка покупки...</string>
+    <string name="purchase_now">Купити зараз</string>
+    <string name="purchase_confirmation_message">Відключити рекламу за %1$s? Це допоможе розвитку додатку.</string>
+    <string name="purchase_successful">Покупка успішна</string>
+    <string name="ads_removed_successfully">Дякуємо! Реклама відключена.</string>
+    <string name="ads_already_removed">Реклама вже відключена</string>
+    <string name="purchase_canceled">Покупка скасована</string>
+    <string name="purchase_failed">Помилка покупки</string>
+    <string name="billing_service_unavailable">Сервіс покупок недоступний</string>
+    <string name="billing_not_supported">Покупки не підтримуються на цьому пристрої</string>
+    <string name="product_not_available">Товар недоступний</string>
+    <string name="remove_ads_with_price">Відключити рекламу (%1$s)</string>
+
+    <!-- Debug strings (only for testing) -->
+    <string name="debug_reset_premium_title">DEBUG: Скинути статус преміум?</string>
+    <string name="debug_reset_premium_message">Це тестова функція для розробки</string>
+    <string name="debug_status_reset_message">Статус скинуто до \'Безкоштовна\'</string>
+
 </resources>

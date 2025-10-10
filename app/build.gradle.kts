@@ -65,6 +65,9 @@ dependencies {
     // Google AdMob for ads
     implementation("com.google.android.gms:play-services-ads:23.3.0")
 
+    // Google Play Billing Library for in-app purchases
+    implementation("com.android.billingclient:billing-ktx:7.0.0")
+
     // For PDF file processing (keeping commented for now)
     // implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 

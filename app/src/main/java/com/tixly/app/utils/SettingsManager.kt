@@ -21,6 +21,9 @@ class SettingsManager(context: Context) {
         const val NOTIFICATION_1_DAY = 24
         const val NOTIFICATION_2_DAYS = 48
         const val NOTIFICATION_1_WEEK = 168
+
+        // Debug flag - можна вручну контролювати
+        private const val ENABLE_LOGGING = true // Змініть на false для релізу
     }
 
     fun getLanguage(): String {
@@ -48,10 +51,17 @@ class SettingsManager(context: Context) {
     }
 
     fun getAdsRemoved(): Boolean {
-        return preferences.getBoolean(KEY_ADS_REMOVED, false)
+        val result = preferences.getBoolean(KEY_ADS_REMOVED, false)
+        if (ENABLE_LOGGING) {
+            android.util.Log.d("SettingsManager", "getAdsRemoved() returning: $result")
+        }
+        return result
     }
 
     fun setAdsRemoved(removed: Boolean) {
+        if (ENABLE_LOGGING) {
+            android.util.Log.d("SettingsManager", "setAdsRemoved($removed)")
+        }
         preferences.edit().putBoolean(KEY_ADS_REMOVED, removed).apply()
     }
 }

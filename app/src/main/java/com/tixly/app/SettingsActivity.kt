@@ -11,15 +11,22 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.tixly.app.billing.BillingManager
 import com.tixly.app.data.TicketsRepository
 import com.tixly.app.utils.NotificationHelper
 import com.tixly.app.utils.NotificationScheduler
 import com.tixly.app.utils.SettingsManager
 import java.util.*
 
-class SettingsActivity : BaseActivity() {
+class SettingsActivity : BaseActivity(), BillingManager.BillingListener {
+
+    companion object {
+        // Debug flag - змініть на false для релізу
+        private const val DEBUG_ENABLED = true
+    }
 
     private lateinit var settingsManager: SettingsManager
+    private lateinit var billingManager: BillingManager
     private lateinit var radioGroupLanguage: RadioGroup
     private lateinit var radioUkrainian: RadioButton
     private lateinit var radioEnglish: RadioButton
@@ -27,6 +34,7 @@ class SettingsActivity : BaseActivity() {
     private lateinit var textNotificationTime: TextView
     private lateinit var spinnerNotificationTime: Spinner
     private lateinit var buttonRemoveAds: Button
+    private lateinit var textAppStatus: TextView // Новий TextView для статусу
 
     // Notification permission launcher for Android 13+
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -58,10 +66,32 @@ class SettingsActivity : BaseActivity() {
         }
 
         settingsManager = SettingsManager(this)
+        billingManager = BillingManager(this, this)
 
         initViews()
         setupListeners()
         loadCurrentSettings()
+
+        // DEBUG ONLY: додаємо можливість скинути статус преміум довгим натисканням на статус
+        if (DEBUG_ENABLED) {
+            textAppStatus.setOnLongClickListener {
+                AlertDialog.Builder(this)
+                    .setTitle(getString(R.string.debug_reset_premium_title))
+                    .setMessage(getString(R.string.debug_reset_premium_message))
+                    .setPositiveButton("Yes") { _, _ ->
+                        android.util.Log.d("SettingsActivity", "DEBUG: Resetting premium status to FALSE")
+                        settingsManager.setAdsRemoved(false)
+                        updatePremiumUI()
+                        Toast.makeText(this, getString(R.string.debug_status_reset_message), Toast.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton("No", null)
+                    .show()
+                true
+            }
+        }
+
+        // Запускаємо ініціалізацію BillingManager після повного створення об'єкта
+        billingManager.startInitialization()
     }
 
     private fun initViews() {
@@ -72,6 +102,7 @@ class SettingsActivity : BaseActivity() {
         textNotificationTime = findViewById(R.id.textNotificationTime)
         spinnerNotificationTime = findViewById(R.id.spinnerNotificationTime)
         buttonRemoveAds = findViewById(R.id.buttonRemoveAds)
+        textAppStatus = findViewById(R.id.textAppStatus) // Ініціалізуємо новий TextView
 
         // Setup spinner for reminder timing
         setupNotificationTimeSpinner()
@@ -175,20 +206,21 @@ class SettingsActivity : BaseActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // Remove ads handler
+        // Remove ads handler - тепер використовуємо справжній BillingManager
         buttonRemoveAds.setOnClickListener {
-            if (!settingsManager.getAdsRemoved()) {
-                settingsManager.setAdsRemoved(true)
-                AlertDialog.Builder(this)
-                    .setTitle(getString(R.string.remove_ads_setting))
-                    .setMessage(getString(R.string.remove_ads_message))
-                    .setPositiveButton("OK") { _, _ ->
-                        buttonRemoveAds.isEnabled = false
-                        buttonRemoveAds.text = getString(R.string.remove_ads_message)
-                    }
-                    .show()
+            if (!billingManager.isRemoveAdsPurchased()) {
+                if (billingManager.isReady()) {
+                    // Show loading state
+                    buttonRemoveAds.isEnabled = false
+                    buttonRemoveAds.text = getString(R.string.loading)
+
+                    // Launch purchase flow (з перевіркою в хмарі)
+                    billingManager.purchaseRemoveAds(this)
+                } else {
+                    Toast.makeText(this, getString(R.string.billing_service_unavailable), Toast.LENGTH_SHORT).show()
+                }
             } else {
-                Toast.makeText(this, getString(R.string.remove_ads_message), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.ads_already_removed), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -217,11 +249,40 @@ class SettingsActivity : BaseActivity() {
         }
         spinnerNotificationTime.setSelection(spinnerPosition)
 
-        // Load ads state
-        if (settingsManager.getAdsRemoved()) {
-            buttonRemoveAds.isEnabled = false
-            buttonRemoveAds.text = getString(R.string.remove_ads_message)
+        // Load ads state and update UI
+        updatePremiumUI()
+    }
+
+    private fun updatePremiumUI() {
+        val isPremium = billingManager.isRemoveAdsPurchased()
+        android.util.Log.d("SettingsActivity", "updatePremiumUI: isPremium = $isPremium")
+
+        // ЗАВЖДИ оновлюємо статус
+        if (isPremium) {
+            textAppStatus.text = getString(R.string.status_premium)
+            textAppStatus.setTextColor(ContextCompat.getColor(this, R.color.pale_green))
+            textAppStatus.setTypeface(null, android.graphics.Typeface.NORMAL) // Преміум - звичайним шрифтом
+            // ХОВАЄМО кнопку для преміум користувачів
+            buttonRemoveAds.visibility = android.view.View.GONE
+            android.util.Log.d("SettingsActivity", "Premium user - hiding button")
+        } else {
+            textAppStatus.text = getString(R.string.status_free)
+            textAppStatus.setTextColor(ContextCompat.getColor(this, R.color.colorPrimary))
+            textAppStatus.setTypeface(null, android.graphics.Typeface.NORMAL) // Безкоштовна - звичайним шрифтом
+            // ПОКАЗУЄМО кнопку для безкоштовних користувачів
+            buttonRemoveAds.visibility = android.view.View.VISIBLE
+            buttonRemoveAds.isEnabled = true
+            // Показуємо тільки назву без ціни - ціну користувач побачить в діалозі
+            buttonRemoveAds.text = getString(R.string.remove_ads_setting)
+            android.util.Log.d("SettingsActivity", "Free user - showing button")
         }
+    }
+
+    private fun updateRemoveAdsButton() {
+        // Цей метод тепер не потрібен, всю логіку перенесено в updatePremiumUI()
+        // Залишаємо його для сумісності, але вся логіка тепер в updatePremiumUI()
+        android.util.Log.d("SettingsActivity", "updateRemoveAdsButton called - redirecting to updatePremiumUI")
+        updatePremiumUI()
     }
 
     private fun updateNotificationTimeVisibility(enabled: Boolean) {
@@ -286,5 +347,117 @@ class SettingsActivity : BaseActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    // BillingManager.BillingListener implementation
+    override fun onBillingSetupFinished(success: Boolean) {
+        android.util.Log.d("SettingsActivity", "Billing setup finished: $success")
+        runOnUiThread {
+            updatePremiumUI()
+        }
+    }
+
+    override fun onBillingServiceDisconnected() {
+        android.util.Log.d("SettingsActivity", "Billing service disconnected")
+        runOnUiThread {
+            buttonRemoveAds.isEnabled = false
+            buttonRemoveAds.text = getString(R.string.billing_service_unavailable)
+        }
+    }
+
+    override fun onPurchaseSuccess(productId: String) {
+        android.util.Log.d("SettingsActivity", "NEW Purchase successful: $productId")
+        runOnUiThread {
+            if (productId == BillingManager.REMOVE_ADS_PRODUCT_ID) {
+                updatePremiumUI()
+
+                // Show success message ONLY for new purchases
+                AlertDialog.Builder(this)
+                    .setTitle(getString(R.string.purchase_successful))
+                    .setMessage(getString(R.string.ads_removed_successfully))
+                    .setPositiveButton("OK", null)
+                    .show()
+
+                // Notify other activities about ads removal
+                setResult(RESULT_OK)
+            }
+        }
+    }
+
+    override fun onPurchaseRestored(productId: String) {
+        android.util.Log.d("SettingsActivity", "Purchase RESTORED (not showing dialog): $productId")
+        runOnUiThread {
+            if (productId == BillingManager.REMOVE_ADS_PRODUCT_ID) {
+                // Тільки оновлюємо UI, БЕЗ показу діалогу успіху
+                updatePremiumUI()
+            }
+        }
+    }
+
+    override fun onPurchaseError(errorMessage: String) {
+        android.util.Log.e("SettingsActivity", "Purchase error: $errorMessage")
+        runOnUiThread {
+            updatePremiumUI()
+            Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onPurchaseCanceled() {
+        android.util.Log.d("SettingsActivity", "Purchase canceled")
+        runOnUiThread {
+            updatePremiumUI()
+            Toast.makeText(this, getString(R.string.purchase_canceled), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onCloudVerificationStarted() {
+        android.util.Log.d("SettingsActivity", "Starting cloud verification...")
+        runOnUiThread {
+            // Show loading state during cloud verification
+            buttonRemoveAds.isEnabled = false
+            buttonRemoveAds.text = getString(R.string.checking_purchase_status)
+        }
+    }
+
+    override fun onCloudVerificationCompleted(isPurchased: Boolean) {
+        android.util.Log.d("SettingsActivity", "Cloud verification completed: isPurchased = $isPurchased")
+        runOnUiThread {
+            if (isPurchased) {
+                // User already purchased - just update UI, no dialog needed
+                updatePremiumUI()
+                Toast.makeText(this, getString(R.string.ads_already_removed), Toast.LENGTH_SHORT).show()
+            } else {
+                // User hasn't purchased - show purchase dialog
+                showPurchaseConfirmationDialog()
+            }
+        }
+    }
+
+    private fun showPurchaseConfirmationDialog() {
+        val price = billingManager.getRemoveAdsPrice() ?: "₴49.00"
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.remove_ads_setting))
+            .setMessage(getString(R.string.purchase_confirmation_message, price))
+            .setPositiveButton(getString(R.string.purchase_now)) { _, _ ->
+                // Launch actual purchase dialog
+                buttonRemoveAds.isEnabled = false
+                buttonRemoveAds.text = getString(R.string.processing_purchase)
+                billingManager.launchPurchaseDialog(this)
+            }
+            .setNegativeButton(getString(R.string.cancel)) { _, _ ->
+                // Reset button state
+                updatePremiumUI()
+            }
+            .setOnCancelListener {
+                // Reset button state if dialog is cancelled
+                updatePremiumUI()
+            }
+            .show()
+    }
+
+    override fun onDestroy() {
+        billingManager.destroy()
+        super.onDestroy()
     }
 }
