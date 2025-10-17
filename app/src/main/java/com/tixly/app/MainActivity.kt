@@ -3,14 +3,13 @@ package com.tixly.app
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import com.tixly.app.utils.PDFProcessor
-import com.tixly.app.utils.ImageProcessor
+import androidx.core.net.toUri
 import com.tixly.app.data.TicketsRepository
+import com.tixly.app.utils.ImageProcessor
+import com.tixly.app.utils.PDFProcessor
 import java.io.File
-import kotlin.system.exitProcess
 
 class MainActivity : BaseActivity() {
 
@@ -35,7 +34,7 @@ class MainActivity : BaseActivity() {
 
         // Process Intent if app is launched via Share or View
         if (handleIncomingIntent(intent)) {
-            return // If processed PDF, don't show main screen
+            return // If processed, don't show main screen
         }
 
         // Go directly to tickets list screen
@@ -46,29 +45,8 @@ class MainActivity : BaseActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        intent?.let { handleIncomingIntent(it) }
-    }
-
-    private fun setupButtons() {
-        val buttonAddTicket = findViewById<Button>(R.id.buttonAddTicket)
-        val buttonViewTickets = findViewById<Button>(R.id.buttonViewTickets)
-        val buttonExit = findViewById<Button>(R.id.buttonExit)
-
-        buttonAddTicket.setOnClickListener {
-            // Open file manager for PDF selection
-            selectPdfLauncher.launch("application/pdf")
-        }
-
-        buttonViewTickets.setOnClickListener {
-            // Go to tickets list screen
-            val intent = Intent(this, TicketsActivity::class.java)
-            startActivity(intent)
-        }
-
-        buttonExit.setOnClickListener {
-            // Close app
-            finishAffinity()
-            exitProcess(0)
+        intent?.let {
+            handleIncomingIntent(it)
         }
     }
 
@@ -87,10 +65,12 @@ class MainActivity : BaseActivity() {
                         intent.type == "application/pdf" -> {
                             Toast.makeText(this, getString(R.string.pdf_received_via_share), Toast.LENGTH_SHORT).show()
                             processPdfFile(it)
+                            return true
                         }
                         intent.type?.startsWith("image/") == true -> {
                             Toast.makeText(this, getString(R.string.image_received_via_share), Toast.LENGTH_SHORT).show()
                             processImageFile(it)
+                            return true
                         }
                         else -> {
                             // Unsupported file type
@@ -146,7 +126,7 @@ class MainActivity : BaseActivity() {
                     val allTickets = TicketsRepository.getAllTickets()
                     val duplicateTicket = allTickets.find { existingTicket ->
                         val existingFileName = existingTicket.pdfFilePath?.let { File(it).name }
-                            ?: existingTicket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                            ?: existingTicket.pdfUri?.let { getFileNameFromUri(it.toUri()) }
                         existingFileName != null && existingFileName == fileName
                     }
 
@@ -199,25 +179,17 @@ class MainActivity : BaseActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.image_processing_error, e.message), Toast.LENGTH_LONG).show()
             e.printStackTrace()
-            // Go to tickets list
-            val intent = Intent(this, TicketsActivity::class.java)
-            startActivity(intent)
-            finish()
         }
     }
 
     private fun getFileNameFromUri(uri: Uri): String? {
-        return try {
-            contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex("_display_name")
-                if (nameIndex >= 0 && cursor.moveToFirst()) {
-                    cursor.getString(nameIndex)
-                } else {
-                    uri.lastPathSegment
-                }
+        return contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex("_display_name")
+            if (nameIndex >= 0 && cursor.moveToFirst()) {
+                cursor.getString(nameIndex)
+            } else {
+                uri.lastPathSegment
             }
-        } catch (e: Exception) {
-            uri.lastPathSegment
         }
     }
 }

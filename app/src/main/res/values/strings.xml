@@ -72,6 +72,9 @@
     <string name="delete">Видалити</string>
     <string name="save">Зберегти</string>
     <string name="discard">Відкинути</string>
+    <string name="yes">Так</string>
+    <string name="no">Ні</string>
+    <string name="ok">OK</string>
 
     <!-- Ticket editing hints and descriptions -->
     <string name="ticket_title_hint">Назва події</string>
@@ -90,7 +93,7 @@
     <string name="ticket_saved">Квиток збережено</string>
     <string name="ticket_updated">Квиток оновлено</string>
     <string name="ticket_deleted">Квиток видалено</string>
-    <string name="save_error">Помилка збереження</string>
+    <string name="save_error">Помилка збереження: %1$s</string>
     <string name="pdf_save_error">Помилка збереження PDF</string>
     <string name="ticket_updated_with_pdf">Квиток оновлено з PDF</string>
     <string name="cancelled">Скасовано</string>
@@ -128,9 +131,11 @@
 
     <!-- Notifications -->
     <string name="event_reminder_title">Нагадування про подію</string>
-    <string name="event_reminder_text">Скоро почнеться: %1$s</string>
+    <string name="event_reminder_text">Ваша подія \"%1$s\" у %2$s скоро розпочнеться.</string>
     <string name="test_notification_title">Тестове нагадування</string>
     <string name="test_notification_text">Це тестове повідомлення для перевірки</string>
+    <string name="ticket_created_from_image">Квиток створено з зображення</string>
+    <string name="no_ticket_available">Квиток недоступний</string>
 
     <!-- Content descriptions for buttons -->
     <string name="save_ticket_desc">Зберегти квиток</string>
@@ -140,27 +145,34 @@
 
     <!-- App usage instructions -->
     <string name="app_usage_instructions">
-        <b>Tixly</b> - помічник для зберігання квитків.\n\n
+        <b>Tixly</b> - ваш особистий помічник для зберігання квитків.\n\n
         🎫 ДОДАВАННЯ КВИТКІВ:\n
         • Натисніть ➕ внизу екрана\n
-        • Оберіть PDF файл або зображення квитка натиснувши 🔄\n
-        • Переглянути файл з квитком - 👁\n
+        • Оберіть PDF-файл або зображення квитка, натиснувши 🔄\n
+        • Попередній перегляд файлу квитка - 👁\n
         • Заповніть назву, місце та дату події\n
-        • Натисніть 💾 для збереження\n\n
+        • Натисніть 💾, щоб зберегти\n\n
         📤 ШВИДКЕ ДОДАВАННЯ З ФАЙЛУ:\n
         • Відкрийте зображення квитка в будь-якому додатку\n
-        • Натисніть кнопку "Поширити" (Share)\n
-        • Оберіть "Tixly" зі списку додатків\n
+        • Натисніть кнопку "Поділитися"\n
+        • Виберіть "Tixly" зі списку додатків\n
         • Квиток відкриється для редагування\n
         • Заповніть назву, місце та дату події\n
-        • Натисніть ❌ для скасування або 💾 для збереження\n\n
+        • Натисніть 💾, щоб зберегти\n\n
+        📱 ПЕРЕГЛЯД ТА РЕДАГУВАННЯ КВИТКІВ:\n
+        • 🖊️ - редагувати квиток\n
+        • 👁 - переглянути файл квитка\n\n
+        📋 КОПІЮВАННЯ КВИТКІВ:\n
+        • Натисніть ⊕ на квитку\n
+        • Назва, місце та дата події будуть скопійовані\n
+        • Виберіть новий файл квитка для копії - 🔄\n
+        • Натисніть 💾, щоб зберегти\n\n
         🔔 НАГАДУВАННЯ:\n
-        • У налаштуваннях увімкніть сповіщення\n
-        • Оберіть час нагадування (1 год - 1 тиждень)\n
-        • Додаток нагадає про події заздалегідь\n\n
+        • Увімкніть нагадування в налаштуваннях\n
+        • Виберіть час сповіщення (від 1 години до 1 тижня)\n
+        • Отримуйте нагадування про майбутні події\n\n
         📱 ДОДАТКОВІ ФУНКЦІЇ:\n
         • Редагуйте квитки натиснувши на них\n
-        • Видаляйте непотрібні квитки\n
         • Змінюйте мову додатку в налаштуваннях\n
         • Відключіть рекламу для більшого комфорту
     </string>
@@ -170,7 +182,7 @@
     <string name="checking_purchase_status">Перевірка статусу покупки...</string>
     <string name="processing_purchase">Обробка покупки...</string>
     <string name="purchase_now">Купити зараз</string>
-    <string name="purchase_confirmation_message">Відключити рекламу за %1$s? Це допоможе розвитку додатку.</string>
+    <string name="purchase_confirmation_message">Віключити рекламу за %1$s? Це допоможе розвитку додатку.</string>
     <string name="purchase_successful">Покупка успішна</string>
     <string name="ads_removed_successfully">Дякуємо! Реклама відключена.</string>
     <string name="ads_already_removed">Реклама вже відключена</string>

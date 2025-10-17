@@ -70,12 +70,4 @@ object NotificationHelper {
     fun areNotificationsEnabled(context: Context): Boolean {
         return NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
-
-    fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // For Android 13+ we need to request POST_NOTIFICATIONS permission
-            // This should be handled in the activity
-            android.util.Log.d("NotificationHelper", "Notification permission should be requested in activity for Android 13+")
-        }
-    }
 }

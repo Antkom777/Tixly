@@ -42,7 +42,10 @@ object AdManager {
             val statusMap = initializationStatus.adapterStatusMap
             for (adapterClass in statusMap.keys) {
                 val status = statusMap[adapterClass]
-                Log.d(TAG, "Adapter: $adapterClass, Status: ${status?.initializationState}, Description: ${status?.description}")
+                Log.d(
+                    TAG,
+                    "Adapter: $adapterClass, Status: ${status?.initializationState}, Description: ${status?.description}"
+                )
             }
         }
     }
@@ -156,32 +159,40 @@ object AdManager {
     }
 
     /**
-     * Hide ads and clean up ad views
+     * Hide ads and the ad container
      */
     fun hideAds(adContainer: LinearLayout) {
         Log.d(TAG, "Hiding ads")
         adContainer.visibility = View.GONE
-        adContainer.removeAllViews()
-    }
-
-    /**
-     * Pause ad view (call in activity onPause)
-     */
-    fun pauseAd(adView: AdView?) {
-        adView?.pause()
     }
 
     /**
      * Resume ad view (call in activity onResume)
      */
     fun resumeAd(adView: AdView?) {
-        adView?.resume()
+        adView?.let {
+            Log.d(TAG, "Resuming ad")
+            it.resume()
+        }
     }
 
     /**
-     * Destroy ad view (call in activity onDestroy)
+     * Pause the ad
+     */
+    fun pauseAd(adView: AdView?) {
+        adView?.let {
+            Log.d(TAG, "Pausing ad")
+            it.pause()
+        }
+    }
+
+    /**
+     * Destroy the ad
      */
     fun destroyAd(adView: AdView?) {
-        adView?.destroy()
+        adView?.let {
+            Log.d(TAG, "Destroying ad")
+            it.destroy()
+        }
     }
 }

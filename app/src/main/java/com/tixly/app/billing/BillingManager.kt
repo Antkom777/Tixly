@@ -25,19 +25,19 @@ class BillingManager(
         fun onBillingSetupFinished(success: Boolean)
         fun onBillingServiceDisconnected()
         fun onPurchaseSuccess(productId: String)
-        fun onPurchaseRestored(productId: String) // Новий метод для відновлених покупок
+        fun onPurchaseRestored(productId: String) // New method for restored purchases
         fun onPurchaseError(errorMessage: String)
         fun onPurchaseCanceled()
-        fun onCloudVerificationStarted() // Новий метод - початок перевірки в хмарі
-        fun onCloudVerificationCompleted(isPurchased: Boolean) // Результат перевірки
+        fun onCloudVerificationStarted() // New method - cloud verification started
+        fun onCloudVerificationCompleted(isPurchased: Boolean) // Verification result
     }
 
     private val settingsManager = SettingsManager(context)
     private var isServiceConnected = false
 
     init {
-        // Не викликаємо initializeBillingClient синхронно в конструкторі
-        // Замість цього ініціалізуємо асинхронно
+        // Don't call initializeBillingClient synchronously in constructor
+        // Instead initialize asynchronously
     }
 
     /**
@@ -56,11 +56,11 @@ class BillingManager(
         // Simulate successful initialization for now
         isServiceConnected = true
 
-        // Викликаємо callback асинхронно, щоб дати час SettingsActivity ініціалізуватися
+        // Call callback asynchronously to give SettingsActivity time to initialize
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             billingListener?.onBillingSetupFinished(true)
 
-            // Check existing premium status - викликаємо onPurchaseRestored замість onPurchaseSuccess
+            // Check existing premium status - call onPurchaseRestored instead of onPurchaseSuccess
             if (settingsManager.getAdsRemoved()) {
                 billingListener?.onPurchaseRestored(REMOVE_ADS_PRODUCT_ID)
             }

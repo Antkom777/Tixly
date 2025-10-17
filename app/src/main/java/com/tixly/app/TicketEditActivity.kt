@@ -12,7 +12,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import com.tixly.app.data.Ticket
 import com.tixly.app.data.TicketsRepository
-import com.tixly.app.utils.NotificationScheduler
 import com.tixly.app.utils.SettingsManager
 import java.io.File
 import java.text.SimpleDateFormat
@@ -35,21 +34,39 @@ class TicketEditActivity : BaseActivity() {
     private var selectedDate: Calendar = Calendar.getInstance()
     private var currentLanguage: String = ""
 
-    // Launcher for selecting any file for replacement (PDF or image)
+    // MIME types for file picker
+    private val supportedMimeTypes = arrayOf(
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "image/jpg",
+        "image/gif",
+        "image/webp"
+    )
+
+    // Activity result launcher for selecting a replacement file (PDF or image)
     private val selectReplacementFileLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { processSelectedFile(it) }
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                val mimeType = contentResolver.getType(uri)
+                processSelectedFile(uri, mimeType)
+            }
+        }
     }
 
-    // Launcher for selecting any file when copying (not just PDF)
+    // Activity result launcher for selecting a file for a new copied ticket
     private val selectCopyFileLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            validateAndSetCopyFile(uri)
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                val mimeType = contentResolver.getType(uri)
+                validateAndSetCopyFile(uri, mimeType)
+            }
         } else {
-            // User cancelled file selection during copy operation
+            // User cancelled the file selection during a copy operation
             android.util.Log.d("TicketEditActivity", "Copy file selection cancelled - clearing copy mode")
             copyFromTicketId = null // Clear copy mode
             updateButtonStates() // Update button states to normal mode
@@ -61,13 +78,20 @@ class TicketEditActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_ticket_edit)
 
-        val settingsManager = com.tixly.app.utils.SettingsManager(this)
+        val settingsManager = SettingsManager(this)
         currentLanguage = settingsManager.getLanguage()
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         initViews()
         setupButtons()
+
+        // Set up back press handling
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                checkUnsavedChangesBeforeExit()
+            }
+        })
 
         ticketId = intent.getStringExtra("TICKET_ID")
         copyFromTicketId = intent.getStringExtra("COPY_FROM_TICKET_ID")
@@ -82,7 +106,7 @@ class TicketEditActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
 
-        val settingsManager = com.tixly.app.utils.SettingsManager(this)
+        val settingsManager = SettingsManager(this)
         val newLanguage = settingsManager.getLanguage()
         if (newLanguage != currentLanguage) {
             recreate()
@@ -91,7 +115,7 @@ class TicketEditActivity : BaseActivity() {
 
         updateActivityTitle()
 
-        // Update button states when returning to activity (e.g., after cancelling file selection)
+        // Update button states when returning to the activity (e.g., after cancelling file selection)
         updateButtonStates()
     }
 
@@ -117,7 +141,7 @@ class TicketEditActivity : BaseActivity() {
         buttonReplace = findViewById(R.id.buttonReplacePdf)
         buttonDelete = findViewById(R.id.buttonDeleteTicket)
 
-        // Make date field non-editable directly - only through picker
+        // Make the date field non-editable directly, only through the picker
         editDate.isFocusable = false
         editDate.isClickable = true
         editDate.setOnClickListener {
@@ -144,13 +168,13 @@ class TicketEditActivity : BaseActivity() {
     }
 
     private fun loadTicketData() {
-        // If this is ticket copying
+        // If this is a ticket copy operation
         copyFromTicketId?.let { copyId ->
             val templateTicket = TicketsRepository.getTicketById(copyId)
             templateTicket?.let { ticket ->
                 supportActionBar?.title = getString(R.string.create_ticket_copy)
 
-                // Copy all fields except ID and PDF
+                // Copy all fields except ID and attachment
                 editTitle.setText(ticket.title)
                 editVenue.setText(ticket.venue ?: "")
 
@@ -160,9 +184,17 @@ class TicketEditActivity : BaseActivity() {
                 }
 
                 Toast.makeText(this, getString(R.string.select_pdf_for_copy), Toast.LENGTH_LONG).show()
-                selectCopyFileLauncher.launch("*/*")
 
-                // PDF buttons unavailable until file is selected
+                // Use ACTION_OPEN_DOCUMENT for persistent permissions
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_MIME_TYPES, supportedMimeTypes)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                selectCopyFileLauncher.launch(intent)
+
+                // Attachment buttons are unavailable until a file is selected
                 buttonOpen.isEnabled = false
                 buttonOpen.alpha = 0.5f
                 buttonReplace.isEnabled = false
@@ -171,7 +203,7 @@ class TicketEditActivity : BaseActivity() {
             return
         }
 
-        // If this is editing existing ticket
+        // If this is editing an existing ticket
         ticketId?.let { id ->
             currentTicket = TicketsRepository.getTicketById(id)
             currentTicket?.let { ticket ->
@@ -185,11 +217,11 @@ class TicketEditActivity : BaseActivity() {
                     updateDateField()
                 }
 
-                // Setup PDF buttons
+                // Set up attachment buttons
                 val hasAttachment = ticket.hasAttachment()
                 buttonOpen.isEnabled = hasAttachment
                 buttonOpen.alpha = if (hasAttachment) 1.0f else 0.5f
-                // Replace attachment button always active
+                // The replace attachment button is always active
                 buttonReplace.isEnabled = true
                 buttonReplace.alpha = 1.0f
             }
@@ -198,12 +230,12 @@ class TicketEditActivity : BaseActivity() {
             supportActionBar?.title = getString(R.string.new_ticket)
             buttonOpen.isEnabled = false
             buttonOpen.alpha = 0.5f
-            // Replace PDF button active for adding PDF to new ticket
+            // The replace attachment button is active for adding an attachment to a new ticket
             buttonReplace.isEnabled = true
             buttonReplace.alpha = 1.0f
         }
 
-        // If this is temporary ticket with attachment
+        // If this is a temporary ticket with an attachment
         tempTicket?.let { ticket ->
             supportActionBar?.title = getString(R.string.edit_ticket)
 
@@ -242,7 +274,7 @@ class TicketEditActivity : BaseActivity() {
         // Create the ticket to save with the correct data
         val ticketToSave = when {
             tempTicket != null -> {
-                // Use tempTicket as base but update with form data
+                // Use tempTicket as a base but update with form data
                 tempTicket!!.copy(
                     title = title,
                     venue = venue,
@@ -250,7 +282,7 @@ class TicketEditActivity : BaseActivity() {
                 )
             }
             currentTicket != null -> {
-                // Update existing ticket with form data only (no PDF changes)
+                // Update existing ticket with form data only (no attachment changes)
                 currentTicket!!.copy(
                     title = title,
                     venue = venue,
@@ -258,7 +290,7 @@ class TicketEditActivity : BaseActivity() {
                 )
             }
             else -> {
-                // Create new ticket
+                // Create a new ticket
                 Ticket(
                     title = title,
                     description = getString(R.string.manually_created_ticket),
@@ -283,22 +315,22 @@ class TicketEditActivity : BaseActivity() {
                     Toast.makeText(this, getString(R.string.ticket_saved), Toast.LENGTH_SHORT).show()
                     true
                 }
-                // Updating existing ticket without attachment changes
+                // Updating an existing ticket without attachment changes
                 tempTicket == null -> {
                     TicketsRepository.updateTicket(ticketToSave)
                     Toast.makeText(this, getString(R.string.ticket_updated), Toast.LENGTH_SHORT).show()
                     true
                 }
-                // Updating existing ticket WITH attachment changes
+                // Updating an existing ticket WITH attachment changes
                 else -> {
                     val oldPdfPath = currentTicket!!.pdfFilePath
                     val oldImagePath = currentTicket!!.imageFilePath
 
-                    // Verify new attachment file exists before proceeding
+                    // Verify that the new attachment file exists before proceeding
                     val newAttachmentExists = when {
                         ticketToSave.pdfFilePath != null -> File(ticketToSave.pdfFilePath).exists()
                         ticketToSave.imageFilePath != null -> File(ticketToSave.imageFilePath).exists()
-                        else -> true // No attachment is also valid
+                        else -> true // No attachment is also a valid state
                     }
 
                     if (!newAttachmentExists) {
@@ -307,10 +339,10 @@ class TicketEditActivity : BaseActivity() {
                         return
                     }
 
-                    // Update ticket in repository
+                    // Update the ticket in the repository
                     TicketsRepository.updateTicket(ticketToSave)
 
-                    // Verify save was successful
+                    // Verify that the save was successful
                     val verifyTicket = TicketsRepository.getTicketById(ticketToSave.id)
                     val saveSuccessful = when {
                         ticketToSave.pdfFilePath != null -> verifyTicket?.pdfFilePath == ticketToSave.pdfFilePath
@@ -394,7 +426,7 @@ class TicketEditActivity : BaseActivity() {
     }
 
     private fun showDateTimePicker() {
-        // First show calendar picker
+        // First, show the calendar picker
         val datePickerDialog = DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
@@ -446,12 +478,12 @@ class TicketEditActivity : BaseActivity() {
             }
         } ?: run {
             android.util.Log.w("TicketEditActivity", "No ticket available")
-            Toast.makeText(this, getString(R.string.attachment_open_error, "No ticket"), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.no_ticket_available), Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun openPdfAttachment(ticket: Ticket) {
-        // First, try to open saved copy from internal storage
+        // First, try to open the saved copy from internal storage
         ticket.pdfFilePath?.let { filePath ->
             val file = File(filePath)
             if (file.exists()) {
@@ -477,7 +509,7 @@ class TicketEditActivity : BaseActivity() {
             }
         }
 
-        // Fallback: try original URI
+        // Fallback: try the original URI
         ticket.pdfUri?.let { uriString ->
             try {
                 val uri = Uri.parse(uriString)
@@ -500,7 +532,7 @@ class TicketEditActivity : BaseActivity() {
     }
 
     private fun openImageAttachment(ticket: Ticket) {
-        // First, try to open saved copy from internal storage
+        // First, try to open the saved copy from internal storage
         ticket.imageFilePath?.let { filePath ->
             val file = File(filePath)
             if (file.exists()) {
@@ -526,7 +558,7 @@ class TicketEditActivity : BaseActivity() {
             }
         }
 
-        // Fallback: try original URI
+        // Fallback: try the original URI
         ticket.imageUri?.let { uriString ->
             try {
                 val uri = Uri.parse(uriString)
@@ -551,46 +583,48 @@ class TicketEditActivity : BaseActivity() {
     private fun selectReplacementPdf() {
         val ticketToModify = currentTicket ?: tempTicket
 
-        if (ticketToModify != null) {
-            // For existing tickets - check if there's any attachment
-            val hasAttachment = ticketToModify.hasAttachment()
-
-            if (hasAttachment) {
-                // If attachment exists, show replacement confirmation dialog
-                AlertDialog.Builder(this)
-                    .setTitle(getString(R.string.replace_attachment))
-                    .setMessage(getString(R.string.replace_attachment_confirmation))
-                    .setPositiveButton(getString(R.string.replace)) { _, _ ->
-                        // Open file selector for any supported file type
-                        selectReplacementFileLauncher.launch("*/*")
-                    }
-                    .setNegativeButton(getString(R.string.cancel), null)
-                    .show()
-            } else {
-                // If no attachment, open file selector directly
-                selectReplacementFileLauncher.launch("*/*")
+        val openPicker = {
+            android.util.Log.d("TicketEditActivity", "Launching system file picker with ACTION_OPEN_DOCUMENT")
+            // Use ACTION_OPEN_DOCUMENT for persistent permissions
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+                putExtra(Intent.EXTRA_MIME_TYPES, supportedMimeTypes)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
+            selectReplacementFileLauncher.launch(intent)
+        }
+
+        if (ticketToModify != null && ticketToModify.hasAttachment()) {
+            // If an attachment exists, show a replacement confirmation dialog
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.replace_attachment))
+                .setMessage(getString(R.string.replace_attachment_confirmation))
+                .setPositiveButton(getString(R.string.replace)) { _, _ ->
+                    openPicker()
+                }
+                .setNegativeButton(getString(R.string.cancel), null)
+                .show()
         } else {
-            // For new tickets - open file selector directly
-            selectReplacementFileLauncher.launch("*/*")
+            // If no attachment exists or it's a new ticket, open the picker directly
+            openPicker()
         }
     }
 
-    private fun processSelectedFile(uri: Uri) {
-        // Get new file name and determine file type
+    private fun processSelectedFile(uri: Uri, mimeType: String?) {
+        // Get the new file name and determine the file type
         val newFileName = getFileNameFromUri(uri)
-        val mimeType = contentResolver.getType(uri)
 
         android.util.Log.d("TicketEditActivity", "Processing file: $newFileName, MIME type: $mimeType, URI: $uri")
 
         if (newFileName != null) {
-            // Check if new file is not used in other tickets
+            // Check if the new file is not already used in other tickets
             val allTickets = TicketsRepository.getAllTickets()
             val duplicateTicket = allTickets.find { otherTicket ->
-                // Skip current ticket when checking (if it exists)
+                // Skip the current ticket when checking (if it exists)
                 if (currentTicket != null && otherTicket.id == currentTicket!!.id) return@find false
 
-                // Check filename from pdfFilePath, pdfUri, imageFilePath or imageUri
+                // Check the filename from pdfFilePath, pdfUri, imageFilePath, or imageUri
                 val existingFileName = otherTicket.pdfFilePath?.let { File(it).name }
                     ?: otherTicket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
                     ?: otherTicket.imageFilePath?.let { File(it).name }
@@ -605,14 +639,20 @@ class TicketEditActivity : BaseActivity() {
                     getString(R.string.file_already_used, duplicateTicket.title),
                     Toast.LENGTH_LONG
                 ).show()
-                // Re-open selector
-                selectReplacementFileLauncher.launch("*/*")
+                // Re-open the system file picker
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_MIME_TYPES, supportedMimeTypes)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                selectReplacementFileLauncher.launch(intent)
                 return
             }
         }
 
         try {
-            // Determine file type using MIME type and extension
+            // Determine the file type using the MIME type and extension
             val isPdf = mimeType == "application/pdf" ||
                        newFileName?.endsWith(".pdf", ignoreCase = true) == true
             val isImage = mimeType?.startsWith("image/") == true ||
@@ -624,19 +664,34 @@ class TicketEditActivity : BaseActivity() {
                              name.endsWith(".webp", ignoreCase = true)
                          } == true
 
-            android.util.Log.d("TicketEditActivity", "Copy file type determined: isPdf=$isPdf, isImage=$isImage, mimeType=$mimeType, fileName=$newFileName")
+            android.util.Log.d("TicketEditActivity", "File type determined: isPdf=$isPdf, isImage=$isImage, mimeType=$mimeType, fileName=$newFileName")
 
             if (!isPdf && !isImage) {
                 Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_LONG).show()
+                // Re-open the system file picker
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_MIME_TYPES, supportedMimeTypes)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                selectReplacementFileLauncher.launch(intent)
                 return
             }
 
-            // Save new file based on determined type
+            // Copy the file to internal storage
             val savedFilePath = if (isPdf) {
                 savePdfToInternalStorage(uri)
             } else {
                 saveImageToInternalStorage(uri)
             }
+
+            if (savedFilePath == null) {
+                Toast.makeText(this, getString(R.string.file_save_error, "Could not save file"), Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            android.util.Log.d("TicketEditActivity", "Final file path: $savedFilePath")
 
             // Get form data for ticket creation
             val formTitle = editTitle.text.toString().trim()
@@ -648,13 +703,13 @@ class TicketEditActivity : BaseActivity() {
             }
 
             if (currentTicket != null) {
-                // For existing tickets - create temporary ticket with correct file type
+                // For existing tickets, create a temporary ticket with the correct file type
                 val updatedTicket = if (isPdf) {
                     currentTicket!!.copy(
                         pdfUri = uri.toString(),
                         pdfFilePath = savedFilePath,
                         fileType = Ticket.FileType.PDF,
-                        // Clear image fields when setting PDF
+                        // Clear image fields when setting a PDF
                         imageUri = null,
                         imageFilePath = null
                     )
@@ -663,7 +718,7 @@ class TicketEditActivity : BaseActivity() {
                         imageUri = uri.toString(),
                         imageFilePath = savedFilePath,
                         fileType = Ticket.FileType.IMAGE,
-                        // Clear PDF fields when setting image
+                        // Clear PDF fields when setting an image
                         pdfUri = null,
                         pdfFilePath = null
                     )
@@ -671,7 +726,7 @@ class TicketEditActivity : BaseActivity() {
                 tempTicket = updatedTicket
                 Toast.makeText(this, getString(R.string.file_attached_ready_to_save), Toast.LENGTH_SHORT).show()
             } else {
-                // For new tickets - create temporary ticket with correct file type
+                // For new tickets, create a temporary ticket with the correct file type
                 val newTicket = if (isPdf) {
                     Ticket(
                         title = formTitle.takeIf { it.isNotEmpty() } ?: getString(R.string.ticket_title_placeholder),
@@ -699,7 +754,7 @@ class TicketEditActivity : BaseActivity() {
                 Toast.makeText(this, getString(R.string.file_attached_ready_to_save), Toast.LENGTH_SHORT).show()
             }
 
-            // Activate file buttons
+            // Activate the file-related buttons
             buttonOpen.isEnabled = true
             buttonOpen.alpha = 1.0f
             buttonReplace.isEnabled = true
@@ -710,7 +765,7 @@ class TicketEditActivity : BaseActivity() {
         }
     }
 
-    private fun validateAndSetCopyFile(uri: Uri) {
+    private fun validateAndSetCopyFile(uri: Uri, mimeType: String?) {
         copyFromTicketId?.let { copyId ->
             val templateTicket = TicketsRepository.getTicketById(copyId)
             templateTicket?.let { originalTicket ->
@@ -718,10 +773,10 @@ class TicketEditActivity : BaseActivity() {
                 val newFileName = getFileNameFromUri(uri)
 
                 if (newFileName != null) {
-                    // Check if new file is not used in other tickets
+                    // Check if the new file is not already used in other tickets
                     val allTickets = TicketsRepository.getAllTickets()
                     val duplicateTicket = allTickets.find { ticket ->
-                        // Check filename from pdfFilePath, pdfUri, imageFilePath or imageUri
+                        // Check the filename from pdfFilePath, pdfUri, imageFilePath, or imageUri
                         val existingFileName = ticket.pdfFilePath?.let { File(it).name }
                             ?: ticket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
                             ?: ticket.imageFilePath?.let { File(it).name }
@@ -736,15 +791,20 @@ class TicketEditActivity : BaseActivity() {
                             getString(R.string.file_already_used, duplicateTicket.title),
                             Toast.LENGTH_LONG
                         ).show()
-                        // Re-open selector
-                        selectCopyFileLauncher.launch("*/*")
+                        // Re-open the selector with the proper intent
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "*/*"
+                            putExtra(Intent.EXTRA_MIME_TYPES, supportedMimeTypes)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        selectCopyFileLauncher.launch(intent)
                         return
                     }
                 }
 
                 try {
-                    // Determine file type using MIME type and extension (same logic as processSelectedFile)
-                    val mimeType = contentResolver.getType(uri)
+                    // Determine the file type using the MIME type and extension (same logic as processSelectedFile)
                     val isPdf = mimeType == "application/pdf" ||
                                newFileName?.endsWith(".pdf", ignoreCase = true) == true
                     val isImage = mimeType?.startsWith("image/") == true ||
@@ -758,18 +818,25 @@ class TicketEditActivity : BaseActivity() {
 
                     if (!isPdf && !isImage) {
                         Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_LONG).show()
-                        selectCopyFileLauncher.launch("*/*")
+                        // Re-open the selector with the proper intent
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "*/*"
+                            putExtra(Intent.EXTRA_MIME_TYPES, supportedMimeTypes)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        selectCopyFileLauncher.launch(intent)
                         return
                     }
 
-                    // Save new file based on determined type
+                    // Save the new file based on the determined type
                     val savedFilePath = if (isPdf) {
                         savePdfToInternalStorage(uri)
                     } else {
                         saveImageToInternalStorage(uri)
                     }
 
-                    // Create new ticket with copied data, but DON'T save to database
+                    // Create a new ticket with the copied data, but DON'T save it to the database yet
                     val title = editTitle.text.toString().trim()
                     val venue = editVenue.text.toString().trim().takeIf { it.isNotEmpty() }
                     val eventDate = if (editDate.text.toString().trim().isNotEmpty()) {
@@ -816,11 +883,11 @@ class TicketEditActivity : BaseActivity() {
                     buttonReplace.isEnabled = true
                     buttonReplace.alpha = 1.0f
 
-                    // Save ticket as temporary for viewing, but not in database
+                    // Save the ticket as a temporary object for viewing, but not in the database
                     tempTicket = newTicket
                     copyFromTicketId = null // Clear copyFromTicketId
 
-                    // Update title
+                    // Update the title
                     supportActionBar?.title = getString(R.string.edit_ticket)
                     Toast.makeText(this, getString(R.string.file_attached_ready_to_save), Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
@@ -850,19 +917,19 @@ class TicketEditActivity : BaseActivity() {
             android.util.Log.d("TicketEditActivity", "=== Saving PDF to internal storage ===")
             android.util.Log.d("TicketEditActivity", "Source URI: $uri")
 
-            // Create folder for PDF files in internal storage
+            // Create a folder for PDF files in internal storage
             val pdfDir = File(filesDir, "pdf_tickets")
             if (!pdfDir.exists()) {
                 val created = pdfDir.mkdirs()
                 android.util.Log.d("TicketEditActivity", "Created PDF directory: $created")
             }
 
-            // Generate unique filename
+            // Generate a unique filename
             val fileName = "ticket_${UUID.randomUUID()}.pdf"
             val destinationFile = File(pdfDir, fileName)
             android.util.Log.d("TicketEditActivity", "Destination file: ${destinationFile.absolutePath}")
 
-            // Copy file
+            // Copy the file
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 destinationFile.outputStream().use { outputStream ->
                     val bytesCopied = inputStream.copyTo(outputStream)
@@ -878,7 +945,6 @@ class TicketEditActivity : BaseActivity() {
             finalPath
         } catch (e: Exception) {
             android.util.Log.e("TicketEditActivity", "Error saving PDF to internal storage", e)
-            e.printStackTrace()
             null
         }
     }
@@ -888,19 +954,19 @@ class TicketEditActivity : BaseActivity() {
             android.util.Log.d("TicketEditActivity", "=== Saving image to internal storage ===")
             android.util.Log.d("TicketEditActivity", "Source URI: $uri")
 
-            // Create folder for image files in internal storage
+            // Create a folder for image files in internal storage
             val imageDir = File(filesDir, "image_tickets")
             if (!imageDir.exists()) {
                 val created = imageDir.mkdirs()
                 android.util.Log.d("TicketEditActivity", "Created image directory: $created")
             }
 
-            // Generate unique filename
+            // Generate a unique filename
             val fileName = "ticket_${UUID.randomUUID()}.jpg"
             val destinationFile = File(imageDir, fileName)
             android.util.Log.d("TicketEditActivity", "Destination file: ${destinationFile.absolutePath}")
 
-            // Copy file
+            // Copy the file
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 destinationFile.outputStream().use { outputStream ->
                     val bytesCopied = inputStream.copyTo(outputStream)
@@ -916,7 +982,6 @@ class TicketEditActivity : BaseActivity() {
             finalPath
         } catch (e: Exception) {
             android.util.Log.e("TicketEditActivity", "Error saving image to internal storage", e)
-            e.printStackTrace()
             null
         }
     }
@@ -930,14 +995,14 @@ class TicketEditActivity : BaseActivity() {
         android.util.Log.d("TicketEditActivity", "copyFromTicketId: $copyFromTicketId")
 
         if (copyFromTicketId != null) {
-            // During copy operation - buttons should be disabled until file is selected
+            // During a copy operation, buttons should be disabled until a file is selected
             buttonOpen.isEnabled = false
             buttonOpen.alpha = 0.5f
             buttonReplace.isEnabled = false
             buttonReplace.alpha = 0.5f
             android.util.Log.d("TicketEditActivity", "Copy mode - buttons disabled")
         } else {
-            // Normal mode - check if ticket has attachment
+            // In normal mode, check if the ticket has an attachment
             val hasAttachment = ticketToCheck?.hasAttachment() ?: false
 
             buttonOpen.isEnabled = hasAttachment
@@ -954,9 +1019,6 @@ class TicketEditActivity : BaseActivity() {
         return false // Return false so Android doesn't handle navigation automatically
     }
 
-    override fun onBackPressed() {
-        checkUnsavedChangesBeforeExit()
-    }
 
     private fun checkUnsavedChangesBeforeExit() {
         val hasChanges = hasUnsavedChanges()
@@ -986,15 +1048,15 @@ class TicketEditActivity : BaseActivity() {
         val currentDateText = editDate.text.toString().trim()
 
         return when {
-            // For ticket copying - always show dialog since ticket is not saved yet
+            // For a ticket copy, always show the dialog since the ticket is not saved yet
             copyFromTicketId != null -> true
-            // For temporary ticket with PDF - always show dialog since ticket is not saved yet
+            // For a temporary ticket with an attachment, always show the dialog
             tempTicket != null -> true
-            // For new ticket - has changes if fields are filled
+            // For a new ticket, there are changes if any fields are filled
             currentTicket == null -> {
                 currentTitle.isNotEmpty() || currentVenue.isNotEmpty() || currentDateText.isNotEmpty()
             }
-            // For existing ticket - compare with original values
+            // For an existing ticket, compare with the original values
             else -> {
                 val originalTitle = currentTicket?.title ?: ""
                 val originalVenue = currentTicket?.venue ?: ""
@@ -1010,12 +1072,12 @@ class TicketEditActivity : BaseActivity() {
     }
 
     private fun cleanupTempTicket() {
-        // Delete temporary PDF file if it exists
+        // Delete the temporary PDF file if it exists
         tempTicket?.pdfFilePath?.let { filePath ->
             try {
                 val file = File(filePath)
                 if (file.exists()) {
-                    // Check if this is not the original file of existing ticket
+                    // Check if this is not the original file of the existing ticket
                     val isOriginalFile = currentTicket?.pdfFilePath == filePath
                     if (!isOriginalFile) {
                         file.delete()
@@ -1026,12 +1088,12 @@ class TicketEditActivity : BaseActivity() {
             }
         }
 
-        // Delete temporary image file if it exists
+        // Delete the temporary image file if it exists
         tempTicket?.imageFilePath?.let { filePath ->
             try {
                 val file = File(filePath)
                 if (file.exists()) {
-                    // Check if this is not the original file of existing ticket
+                    // Check if this is not the original file of the existing ticket
                     val isOriginalFile = currentTicket?.imageFilePath == filePath
                     if (!isOriginalFile) {
                         file.delete()

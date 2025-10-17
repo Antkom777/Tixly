@@ -137,36 +137,4 @@ object NotificationManager {
         NotificationScheduler.cancelEventReminder(context, ticketId)
         android.util.Log.d("NotificationManager", "✅ Notification cancelled for deleted ticket")
     }
-
-    /**
-     * Get notification status information (for diagnostics)
-     */
-    fun getNotificationStatus(context: Context): String {
-        val settingsManager = SettingsManager(context)
-        val allTickets = TicketsRepository.getAllTickets()
-        val upcomingTickets = allTickets.filter { it.isUpcoming() }
-
-        val notificationsEnabled = settingsManager.getNotificationsEnabled()
-        val notificationTime = settingsManager.getNotificationTime()
-
-        val timeText = when (notificationTime) {
-            0 -> "1 hour before"
-            1 -> "2 hours before"
-            2 -> "1 day before"
-            3 -> "2 days before"
-            4 -> "1 week before"
-            else -> "unknown"
-        }
-
-        return buildString {
-            appendLine("📊 Notification Status:")
-            appendLine("Enabled: ${if (notificationsEnabled) "✅ Yes" else "❌ No"}")
-            appendLine("Reminder time: $timeText")
-            appendLine("Total tickets: ${allTickets.size}")
-            appendLine("Upcoming events: ${upcomingTickets.size}")
-            if (notificationsEnabled) {
-                appendLine("Scheduled notifications: ${upcomingTickets.count { it.eventDate != null }}")
-            }
-        }
-    }
 }

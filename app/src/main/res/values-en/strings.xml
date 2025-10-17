@@ -2,11 +2,11 @@
 <resources>
     <string name="app_name">Tixly</string>
     <string name="settings">Settings</string>
-    <string name="info">Help</string>
+    <string name="info">Info</string>
     <string name="exit">Exit</string>
 
     <!-- Settings strings -->
-    <string name="language_setting">App Language</string>
+    <string name="language_setting">App language</string>
     <string name="language_ukrainian">Українська</string>
     <string name="language_english">English</string>
 
@@ -14,10 +14,10 @@
     <string name="notifications_enabled">Enable reminders</string>
     <string name="notification_time_before">Reminder time</string>
 
-    <string name="remove_ads_setting">Remove ads</string>
-    <string name="remove_ads_message">Thank you for your support!</string>
-    <string name="app_status_section">App Status</string>
-    <string name="app_status_label">App Status:</string>
+    <string name="remove_ads_setting">Disable ads</string>
+    <string name="remove_ads_message">Thanks for your support!</string>
+    <string name="app_status_section">App status</string>
+    <string name="app_status_label">App status:</string>
     <string name="status_free">Free</string>
     <string name="status_premium">Premium</string>
 
@@ -28,11 +28,11 @@
     <string name="time_1_week">1 week before</string>
 
     <!-- Ticket strings -->
-    <string name="my_tickets">My Tickets</string>
-    <string name="add_ticket">Add Ticket</string>
+    <string name="my_tickets">My tickets</string>
+    <string name="add_ticket">Add ticket</string>
     <string name="cancel">Cancel</string>
 
-    <string name="ticket_title_placeholder">(No title)</string>
+    <string name="ticket_title_placeholder">(Untitled)</string>
     <string name="date_not_specified">Date not specified</string>
     <string name="venue_not_specified">Venue not specified</string>
 
@@ -41,7 +41,7 @@
     <string name="pdf_processed_successfully">PDF processed successfully!</string>
     <string name="failed_to_process_pdf">Failed to process PDF</string>
     <string name="pdf_processing_error">PDF processing error: %1$s</string>
-    <string name="pdf_received_via_share">PDF received for ticket creation</string>
+    <string name="pdf_received_via_share">PDF received to create a ticket</string>
     <string name="pdf_opened_in_app">PDF opened in app</string>
 
     <!-- Image processing -->
@@ -49,54 +49,57 @@
     <string name="image_processed_successfully">Image processed successfully!</string>
     <string name="failed_to_process_image">Failed to process image</string>
     <string name="image_processing_error">Image processing error: %1$s</string>
-    <string name="image_received_via_share">Image received for ticket creation</string>
+    <string name="image_received_via_share">Image received to create a ticket</string>
     <string name="image_opened_in_app">Image opened in app</string>
 
     <!-- Universal file processing -->
     <string name="failed_to_process_file">Failed to process file</string>
-    <string name="unsupported_file_type">Unsupported file type. Select PDF or image.</string>
+    <string name="unsupported_file_type">Unsupported file type. Please select a PDF or image.</string>
 
     <!-- Attachment opening errors -->
-    <string name="attachment_open_error">Attachment opening error: %1$s</string>
+    <string name="attachment_open_error">Error opening attachment: %1$s</string>
     <string name="no_app_to_open_image">No app to open images</string>
-    <string name="image_open_error">Image opening error: %1$s</string>
+    <string name="image_open_error">Error opening image: %1$s</string>
     <string name="image_not_found">Image not found</string>
     <string name="no_app_to_open_pdf">No app to open PDF</string>
-    <string name="pdf_open_error">PDF opening error: %1$s</string>
+    <string name="pdf_open_error">Error opening PDF: %1$s</string>
     <string name="pdf_not_found">PDF file not found</string>
 
     <!-- Other strings -->
     <string name="ad_banner">Advertisement</string>
-    <string name="edit_ticket">Edit Ticket</string>
-    <string name="new_ticket">New Ticket</string>
+    <string name="edit_ticket">Edit ticket</string>
+    <string name="new_ticket">New ticket</string>
     <string name="delete">Delete</string>
     <string name="save">Save</string>
     <string name="discard">Discard</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="ok">OK</string>
 
     <!-- Ticket editing hints and descriptions -->
     <string name="ticket_title_hint">Event title</string>
     <string name="ticket_venue_hint">Venue</string>
-    <string name="ticket_date_hint">Date and time (tap to select)</string>
+    <string name="ticket_date_hint">Date and time (click to select)</string>
 
     <!-- Additional missing strings -->
     <string name="no_saved_tickets">No saved tickets</string>
-    <string name="pdf_already_used">PDF already used for ticket: %1$s</string>
+    <string name="pdf_already_used">PDF is already used for a ticket: %1$s</string>
 
     <!-- Ticket editing strings -->
-    <string name="create_ticket_copy">Create ticket copy</string>
+    <string name="create_ticket_copy">Create a copy of the ticket</string>
     <string name="enter_ticket_title">Enter ticket title</string>
-    <string name="manually_created_ticket">Manually created ticket</string>
-    <string name="new_event">New Event</string>
+    <string name="manually_created_ticket">Ticket created manually</string>
+    <string name="new_event">New event</string>
     <string name="ticket_saved">Ticket saved</string>
     <string name="ticket_updated">Ticket updated</string>
     <string name="ticket_deleted">Ticket deleted</string>
-    <string name="save_error">Save error</string>
+    <string name="save_error">Save error: %1$s</string>
     <string name="pdf_save_error">PDF save error</string>
     <string name="ticket_updated_with_pdf">Ticket updated with PDF</string>
     <string name="cancelled">Cancelled</string>
 
     <!-- Delete confirmation -->
-    <string name="delete_ticket">Delete Ticket</string>
+    <string name="delete_ticket">Delete ticket</string>
     <string name="delete_ticket_confirmation">Are you sure you want to delete this ticket?</string>
 
     <!-- Replace attachment strings -->
@@ -110,7 +113,7 @@
     <string name="pdf_attached_ready_to_save">PDF attached, ready to save</string>
     <string name="file_attached_ready_to_save">File attached, ready to save</string>
     <string name="file_replacement_error">File replacement error: %1$s</string>
-    <string name="file_already_used">File already used for ticket: %1$s</string>
+    <string name="file_already_used">File is already used for a ticket: %1$s</string>
     <string name="file_save_error">File save error: %1$s</string>
     <string name="ticket_updated_with_attachment">Ticket updated with attachment</string>
     <string name="select_pdf_for_copy">Select file for copy</string>
@@ -123,14 +126,16 @@
     <!-- Sample tickets -->
     <string name="sample_ticket_1_title">Favorite artist concert</string>
     <string name="sample_ticket_1_venue">Sports Palace</string>
-    <string name="sample_ticket_2_title">Theater performance</string>
+    <string name="sample_ticket_2_title">Theater play</string>
     <string name="sample_ticket_2_venue">National Theater</string>
 
     <!-- Notifications -->
-    <string name="event_reminder_title">Event Reminder</string>
-    <string name="event_reminder_text">Coming soon: %1$s</string>
-    <string name="test_notification_title">Test Reminder</string>
-    <string name="test_notification_text">This is a test notification</string>
+    <string name="event_reminder_title">Event reminder</string>
+    <string name="event_reminder_text">Your event \"%1$s\" at %2$s is starting soon.</string>
+    <string name="test_notification_title">Test reminder</string>
+    <string name="test_notification_text">This is a test message for verification</string>
+    <string name="ticket_created_from_image">Ticket created from image</string>
+    <string name="no_ticket_available">Ticket not available</string>
 
     <!-- Content descriptions for buttons -->
     <string name="save_ticket_desc">Save ticket</string>
@@ -166,31 +171,31 @@
         • Enable reminders in settings\n
         • Choose notification time (from 1 hour to 1 week)\n
         • Receive reminders about upcoming events\n\n
-        ⚙️ SETTINGS:\n
-        • Change app language\n
-        • Configure reminders\n
-        • Remove ads
+        📱 ADDITIONAL FEATURES:\n
+        • Edit tickets by tapping on them\n
+        • Change the app language in the settings\n
+        • Disable ads for more comfort
     </string>
 
     <!-- Google Play Billing strings -->
     <string name="loading">Loading...</string>
     <string name="checking_purchase_status">Checking purchase status...</string>
     <string name="processing_purchase">Processing purchase...</string>
-    <string name="purchase_now">Purchase Now</string>
-    <string name="purchase_confirmation_message">Remove ads for %1$s? This will help app development.</string>
-    <string name="purchase_successful">Purchase Successful</string>
-    <string name="ads_removed_successfully">Thank you! Ads removed.</string>
-    <string name="ads_already_removed">Ads already removed</string>
+    <string name="purchase_now">Purchase now</string>
+    <string name="purchase_confirmation_message">Disable ads for %1$s? This will help the app\'s development.</string>
+    <string name="purchase_successful">Purchase successful</string>
+    <string name="ads_removed_successfully">Thank you! Ads are disabled.</string>
+    <string name="ads_already_removed">Ads are already disabled</string>
     <string name="purchase_canceled">Purchase canceled</string>
     <string name="purchase_failed">Purchase failed</string>
     <string name="billing_service_unavailable">Billing service unavailable</string>
-    <string name="billing_not_supported">Purchases not supported on this device</string>
-    <string name="product_not_available">Product unavailable</string>
-    <string name="remove_ads_with_price">Remove ads (%1$s)</string>
+    <string name="billing_not_supported">Billing is not supported on this device</string>
+    <string name="product_not_available">Product not available</string>
+    <string name="remove_ads_with_price">Disable ads (%1$s)</string>
 
     <!-- Debug strings (only for testing) -->
     <string name="debug_reset_premium_title">DEBUG: Reset premium status?</string>
-    <string name="debug_reset_premium_message">This is a development testing feature</string>
+    <string name="debug_reset_premium_message">This is a test function for development</string>
     <string name="debug_status_reset_message">Status reset to \'Free\'</string>
 
 </resources>

@@ -22,8 +22,8 @@ class SettingsManager(context: Context) {
         const val NOTIFICATION_2_DAYS = 48
         const val NOTIFICATION_1_WEEK = 168
 
-        // Debug flag - можна вручну контролювати
-        private const val ENABLE_LOGGING = true // Змініть на false для релізу
+        // Debug flag - can be manually controlled
+        private const val ENABLE_LOGGING = true // Change to false for release
     }
 
     fun getLanguage(): String {

@@ -64,8 +64,7 @@ object NotificationScheduler {
         }
 
         // Check notification permissions
-        val notificationHelper = com.tixly.app.utils.NotificationHelper
-        if (!notificationHelper.areNotificationsEnabled(context)) {
+        if (!NotificationHelper.areNotificationsEnabled(context)) {
             android.util.Log.w("NotificationScheduler", "⚠️ Notifications are disabled in system settings")
             return
         }
@@ -98,51 +97,24 @@ object NotificationScheduler {
                 } else {
                     android.util.Log.w("NotificationScheduler", "⚠️ Cannot schedule exact alarms - requesting permission")
                     // For Android 12+ we need to request exact alarm permission
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val settingsIntent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                        if (context is android.app.Activity) {
-                            context.startActivity(settingsIntent)
-                        }
+                    val settingsIntent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                    if (context is android.app.Activity) {
+                        context.startActivity(settingsIntent)
                     }
-                    // Fallback to inexact alarm
-                    alarmManager.set(
-                        AlarmManager.RTC_WAKEUP,
-                        notificationDate.timeInMillis,
-                        pendingIntent
-                    )
-                    android.util.Log.w("NotificationScheduler", "⚠️ Using inexact alarm as fallback")
                 }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            } else {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     notificationDate.timeInMillis,
                     pendingIntent
                 )
                 android.util.Log.d("NotificationScheduler", "✅ Scheduled exact alarm with setExactAndAllowWhileIdle (API < 31)")
-            } else {
-                alarmManager.setExact(
-                    AlarmManager.RTC_WAKEUP,
-                    notificationDate.timeInMillis,
-                    pendingIntent
-                )
-                android.util.Log.d("NotificationScheduler", "✅ Scheduled exact alarm with setExact (API < 23)")
             }
 
             android.util.Log.d("NotificationScheduler", "🔔 Successfully scheduled notification for ticket: ${ticket.title}")
             android.util.Log.d("NotificationScheduler", "📅 Will trigger at: ${notificationDate.time}")
         } catch (e: SecurityException) {
             android.util.Log.e("NotificationScheduler", "❌ Permission denied for scheduling exact alarms", e)
-            // Try inexact alarm as fallback
-            try {
-                alarmManager.set(
-                    AlarmManager.RTC_WAKEUP,
-                    notificationDate.timeInMillis,
-                    pendingIntent
-                )
-                android.util.Log.d("NotificationScheduler", "⚠️ Fallback: Scheduled inexact alarm")
-            } catch (e2: Exception) {
-                android.util.Log.e("NotificationScheduler", "❌ Failed to schedule any alarm", e2)
-            }
         } catch (e: Exception) {
             android.util.Log.e("NotificationScheduler", "❌ Error scheduling notification", e)
         }
@@ -164,15 +136,19 @@ object NotificationScheduler {
     }
 
     fun rescheduleAllNotifications(context: Context, tickets: List<Ticket>, notificationTime: Int) {
-        android.util.Log.d("NotificationScheduler", "Rescheduling all notifications")
+        android.util.Log.d("NotificationScheduler", "=== Rescheduling all notifications ===")
+        android.util.Log.d("NotificationScheduler", "Total tickets to process: ${tickets.size}")
 
-        // Cancel all existing notifications first
+        // First, cancel all existing notifications for these tickets
         tickets.forEach { ticket ->
             cancelEventReminder(context, ticket.id)
         }
 
-        // Schedule new notifications for upcoming events
-        tickets.filter { it.isUpcoming() }.forEach { ticket ->
+        // Then, schedule new notifications for upcoming events
+        val upcomingTickets = tickets.filter { it.eventDate != null && it.eventDate.after(Date()) }
+        android.util.Log.d("NotificationScheduler", "Upcoming tickets to schedule: ${upcomingTickets.size}")
+
+        upcomingTickets.forEach { ticket ->
             scheduleEventReminder(context, ticket, notificationTime)
         }
     }

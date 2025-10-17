@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
+import androidx.core.graphics.scale
 import com.tixly.app.data.Ticket
 import java.io.File
 import java.io.FileOutputStream
@@ -36,7 +37,7 @@ class ImageProcessor(private val context: Context) {
             // Create ticket with image
             val ticket = Ticket(
                 title = context.getString(com.tixly.app.R.string.new_event),
-                description = "Ticket created from image",
+                description = context.getString(com.tixly.app.R.string.ticket_created_from_image),
                 imageFilePath = savedImagePath,
                 imageUri = uri.toString(),
                 fileType = Ticket.FileType.IMAGE,
@@ -106,64 +107,31 @@ class ImageProcessor(private val context: Context) {
     }
 
     /**
-     * Resize image if it's too large
+     * Resize image if its dimensions exceed the maximum allowed
      */
     private fun resizeImageIfNeeded(bitmap: Bitmap): Bitmap {
         val width = bitmap.width
         val height = bitmap.height
 
-        // Check if resizing is needed
         if (width <= MAX_IMAGE_WIDTH && height <= MAX_IMAGE_HEIGHT) {
-            Log.d(TAG, "Image size OK: ${width}x${height}")
+            Log.d(TAG, "Image dimensions are within limits, no resizing needed")
             return bitmap
         }
 
-        // Calculate new dimensions
-        val aspectRatio = width.toFloat() / height.toFloat()
-        val (newWidth, newHeight) = if (aspectRatio > 1) {
-            // Landscape
-            MAX_IMAGE_WIDTH to (MAX_IMAGE_WIDTH / aspectRatio).toInt()
-        } else {
-            // Portrait
-            (MAX_IMAGE_HEIGHT * aspectRatio).toInt() to MAX_IMAGE_HEIGHT
+        Log.d(TAG, "Image is too large ($width x $height), resizing...")
+
+        val ratio = width.toFloat() / height.toFloat()
+        var newWidth = MAX_IMAGE_WIDTH
+        var newHeight = (newWidth / ratio).toInt()
+
+        if (newHeight > MAX_IMAGE_HEIGHT) {
+            newHeight = MAX_IMAGE_HEIGHT
+            newWidth = (newHeight * ratio).toInt()
         }
 
-        Log.d(TAG, "Resizing image from ${width}x${height} to ${newWidth}x${newHeight}")
+        val resizedBitmap = bitmap.scale(newWidth, newHeight)
+        Log.d(TAG, "Image resized to $newWidth x $newHeight")
 
-        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
-    }
-
-    /**
-     * Get filename from URI
-     */
-    private fun getFileNameFromUri(uri: Uri): String? {
-        return try {
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex("_display_name")
-                if (nameIndex >= 0 && cursor.moveToFirst()) {
-                    cursor.getString(nameIndex)
-                } else {
-                    uri.lastPathSegment
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not get filename from URI", e)
-            uri.lastPathSegment
-        }
-    }
-
-    /**
-     * Check if URI points to an image file
-     */
-    fun isImageFile(uri: Uri): Boolean {
-        val mimeType = context.contentResolver.getType(uri)
-        return mimeType?.startsWith("image/") == true
-    }
-
-    /**
-     * Get supported image MIME types
-     */
-    fun getSupportedImageTypes(): Array<String> {
-        return arrayOf("image/jpeg", "image/jpg", "image/png")
+        return resizedBitmap
     }
 }

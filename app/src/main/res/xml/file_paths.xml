@@ -8,5 +8,10 @@
 
     <!-- General files directory -->
     <files-path name="files" path="." />
-</paths>
 
+    <!-- External storage for file picker -->
+    <external-path name="external_files" path="." />
+
+    <!-- External storage Downloads -->
+    <external-path name="external_downloads" path="Download/" />
+</paths>

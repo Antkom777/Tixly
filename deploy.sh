@@ -34,8 +34,17 @@ PACKAGE_NAME="com.tixly.app.debug"  # Debug builds have .debug suffix
 MAIN_ACTIVITY="TicketsActivity"
 TEST_FILES_DIR="test-files"  # Test files directory in project root
 
+# Clean build to ensure all changes are applied
+echo "1. Cleaning previous build..."
+./gradlew clean
+if [ $? -ne 0 ]; then
+    echo "✗ Clean failed"
+    exit 1
+fi
+echo "✓ Clean completed!"
+
 # Build the app
-echo "1. Building the application..."
+echo "2. Building the application..."
 ./gradlew assembleDebug
 
 if [ $? -ne 0 ]; then
@@ -45,7 +54,7 @@ fi
 echo "✓ APK built successfully!"
 
 # Check for connected devices/emulators
-echo "2. Checking device connection..."
+echo "3. Checking device connection..."
 DEVICES=$(adb devices | grep -v "List of devices" | grep -v "^$" | wc -l)
 
 if [ $DEVICES -eq 0 ]; then
@@ -62,10 +71,34 @@ if [ $DEVICES -eq 0 ]; then
         echo "Using existing emulator: $AVD_NAME"
     fi
 
-    # Start emulator in background
-    echo "Starting emulator $AVD_NAME..."
-    emulator -avd $AVD_NAME -no-audio -no-snapshot-save &
+    # Start emulator in background with data wipe
+    echo "Starting emulator $AVD_NAME with data wipe..."
+    emulator -avd $AVD_NAME -no-audio -no-snapshot-save -wipe-data &
     EMULATOR_PID=$!
+
+    # Wait a moment for emulator window to appear
+    sleep 2
+
+    # Set emulator window to always on top using wmctrl
+    if command -v wmctrl &> /dev/null; then
+        # Find MAIN emulator window (not the control panel) and set it to always on top
+        # The main window usually has "Android Emulator" in the title
+        EMULATOR_WINDOW=$(wmctrl -l | grep -i "Android Emulator" | grep -v "Emulator$" | head -1 | awk '{print $1}')
+        if [ ! -z "$EMULATOR_WINDOW" ]; then
+            wmctrl -i -r "$EMULATOR_WINDOW" -b add,above
+            echo "✓ Emulator main window set to 'Always on Top'"
+        else
+            # Fallback: try to find any emulator window
+            EMULATOR_WINDOW=$(wmctrl -l | grep -i "emulator" | head -1 | awk '{print $1}')
+            if [ ! -z "$EMULATOR_WINDOW" ]; then
+                wmctrl -i -r "$EMULATOR_WINDOW" -b add,above
+                echo "✓ Emulator window set to 'Always on Top'"
+            fi
+        fi
+    else
+        echo "⚠ wmctrl not installed, skipping 'Always on Top' setting"
+        echo "  Install with: sudo apt-get install wmctrl"
+    fi
 
     # Wait for emulator to boot
     echo "Waiting for emulator to boot (this may take several minutes)..."
@@ -92,8 +125,18 @@ fi
 echo "Connected devices:"
 adb devices
 
+# Clear app data if app is already installed
+echo "4. Clearing app data..."
+if adb shell pm list packages | grep -q "$PACKAGE_NAME"; then
+    echo "App is installed, clearing data..."
+    adb shell pm clear "$PACKAGE_NAME"
+    echo "✓ App data cleared!"
+else
+    echo "App not installed yet, skipping data clear"
+fi
+
 # Install the app
-echo "3. Installing application..."
+echo "5. Installing application..."
 INSTALL_RESULT=$(adb install -r "$APK_PATH" 2>&1)
 
 if [[ $INSTALL_RESULT == *"Success"* ]]; then
@@ -105,13 +148,13 @@ fi
 
 # Copy test PDF if it exists
 if [ -f "$TEST_FILES_DIR/ticket4.pdf" ]; then
-    echo "4. Copying test PDF to device..."
+    echo "6. Copying test PDF to device..."
     adb push "$TEST_FILES_DIR/ticket4.pdf" /sdcard/Download/
     echo "✓ ticket4.pdf copied to device"
 fi
 
 # Copy test ticket images if they exist
-echo "5. Copying test ticket images to device..."
+echo "7. Copying test ticket images to device..."
 
 TICKETS_COPIED=0
 if [ -f "$TEST_FILES_DIR/ticket1.png" ]; then
@@ -139,8 +182,8 @@ else
 fi
 
 # Launch the app
-echo "6. Launching application..."
-adb shell am start -n "$PACKAGE_NAME/com.tixly.app.$MAIN_ACTIVITY"
+echo "8. Launching application..."
+adb shell am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n "$PACKAGE_NAME/com.tixly.app.$MAIN_ACTIVITY"
 
 echo ""
 echo "✓ Tixly app deployed and launched successfully!"
