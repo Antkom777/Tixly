@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.net.toUri
 import com.tixly.app.data.TicketsRepository
 import com.tixly.app.utils.ImageProcessor
@@ -16,12 +15,6 @@ class MainActivity : BaseActivity() {
     private lateinit var pdfProcessor: PDFProcessor
     private lateinit var imageProcessor: ImageProcessor
 
-    // Launcher for selecting PDF file
-    private val selectPdfLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { processPdfFile(it) }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,27 +68,6 @@ class MainActivity : BaseActivity() {
                         else -> {
                             // Unsupported file type
                             Toast.makeText(this, getString(R.string.failed_to_process_file), Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-            }
-            Intent.ACTION_VIEW -> {
-                intent.data?.let { uri ->
-                    when {
-                        intent.type == "application/pdf" -> {
-                            Toast.makeText(this, getString(R.string.pdf_opened_in_app), Toast.LENGTH_SHORT).show()
-                            processPdfFile(uri)
-                            return true
-                        }
-                        intent.type?.startsWith("image/") == true -> {
-                            Toast.makeText(this, getString(R.string.image_opened_in_app), Toast.LENGTH_SHORT).show()
-                            processImageFile(uri)
-                            return true
-                        }
-                        else -> {
-                            // Unsupported file type
-                            Toast.makeText(this, getString(R.string.failed_to_process_file), Toast.LENGTH_SHORT).show()
-                            return false
                         }
                     }
                 }

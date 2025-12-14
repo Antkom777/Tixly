@@ -10,6 +10,7 @@ import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.net.toUri
 import com.tixly.app.data.Ticket
 import com.tixly.app.data.TicketsRepository
 import com.tixly.app.utils.SettingsManager
@@ -26,6 +27,7 @@ class TicketEditActivity : BaseActivity() {
     private lateinit var buttonOpen: ImageButton
     private lateinit var buttonReplace: ImageButton
     private lateinit var buttonDelete: ImageButton
+    private lateinit var buttonCopyData: ImageButton
 
     private var ticketId: String? = null
     private var copyFromTicketId: String? = null
@@ -48,7 +50,7 @@ class TicketEditActivity : BaseActivity() {
     private val selectReplacementFileLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
+        if (result.resultCode == RESULT_OK) {
             result.data?.data?.let { uri ->
                 val mimeType = contentResolver.getType(uri)
                 processSelectedFile(uri, mimeType)
@@ -60,7 +62,7 @@ class TicketEditActivity : BaseActivity() {
     private val selectCopyFileLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
+        if (result.resultCode == RESULT_OK) {
             result.data?.data?.let { uri ->
                 val mimeType = contentResolver.getType(uri)
                 validateAndSetCopyFile(uri, mimeType)
@@ -140,6 +142,7 @@ class TicketEditActivity : BaseActivity() {
         buttonOpen = findViewById(R.id.buttonOpenTicket)
         buttonReplace = findViewById(R.id.buttonReplacePdf)
         buttonDelete = findViewById(R.id.buttonDeleteTicket)
+        buttonCopyData = findViewById(R.id.buttonCopyTicketData)
 
         // Make the date field non-editable directly, only through the picker
         editDate.isFocusable = false
@@ -164,6 +167,10 @@ class TicketEditActivity : BaseActivity() {
 
         buttonDelete.setOnClickListener {
             showDeleteConfirmation()
+        }
+
+        buttonCopyData.setOnClickListener {
+            showTicketSelectionDialog()
         }
     }
 
@@ -496,12 +503,14 @@ class TicketEditActivity : BaseActivity() {
 
                     val intent = Intent(Intent.ACTION_VIEW).apply {
                         setDataAndType(uri, "application/pdf")
-                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
 
-                    if (intent.resolveActivity(packageManager) != null) {
+                    try {
                         startActivity(intent)
                         return
+                    } catch (e: android.content.ActivityNotFoundException) {
+                        android.util.Log.e("TicketEditActivity", "No app to open PDF", e)
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("TicketEditActivity", "Error opening internal PDF file", e)
@@ -512,15 +521,15 @@ class TicketEditActivity : BaseActivity() {
         // Fallback: try the original URI
         ticket.pdfUri?.let { uriString ->
             try {
-                val uri = Uri.parse(uriString)
+                val uri = uriString.toUri()
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, "application/pdf")
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
 
-                if (intent.resolveActivity(packageManager) != null) {
+                try {
                     startActivity(intent)
-                } else {
+                } catch (_: android.content.ActivityNotFoundException) {
                     Toast.makeText(this, getString(R.string.no_app_to_open_pdf), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
@@ -543,14 +552,25 @@ class TicketEditActivity : BaseActivity() {
                         file
                     )
 
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(uri, "image/*")
-                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    // Determine MIME type based on file extension
+                    val mimeType = when (file.extension.lowercase()) {
+                        "jpg", "jpeg" -> "image/jpeg"
+                        "png" -> "image/png"
+                        "gif" -> "image/gif"
+                        "webp" -> "image/webp"
+                        else -> "image/*"
                     }
 
-                    if (intent.resolveActivity(packageManager) != null) {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, mimeType)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+
+                    try {
                         startActivity(intent)
                         return
+                    } catch (e: android.content.ActivityNotFoundException) {
+                        android.util.Log.e("TicketEditActivity", "No app to open image", e)
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("TicketEditActivity", "Error opening internal image file", e)
@@ -561,15 +581,19 @@ class TicketEditActivity : BaseActivity() {
         // Fallback: try the original URI
         ticket.imageUri?.let { uriString ->
             try {
-                val uri = Uri.parse(uriString)
+                val uri = uriString.toUri()
+
+                // Try to get MIME type from content resolver
+                val mimeType = contentResolver.getType(uri) ?: "image/*"
+
                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "image/*")
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    setDataAndType(uri, mimeType)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
 
-                if (intent.resolveActivity(packageManager) != null) {
+                try {
                     startActivity(intent)
-                } else {
+                } catch (_: android.content.ActivityNotFoundException) {
                     Toast.makeText(this, getString(R.string.no_app_to_open_image), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
@@ -626,9 +650,9 @@ class TicketEditActivity : BaseActivity() {
 
                 // Check the filename from pdfFilePath, pdfUri, imageFilePath, or imageUri
                 val existingFileName = otherTicket.pdfFilePath?.let { File(it).name }
-                    ?: otherTicket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                    ?: otherTicket.pdfUri?.let { getFileNameFromUri(it.toUri()) }
                     ?: otherTicket.imageFilePath?.let { File(it).name }
-                    ?: otherTicket.imageUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                    ?: otherTicket.imageUri?.let { getFileNameFromUri(it.toUri()) }
 
                 existingFileName != null && existingFileName == newFileName
             }
@@ -778,9 +802,9 @@ class TicketEditActivity : BaseActivity() {
                     val duplicateTicket = allTickets.find { ticket ->
                         // Check the filename from pdfFilePath, pdfUri, imageFilePath, or imageUri
                         val existingFileName = ticket.pdfFilePath?.let { File(it).name }
-                            ?: ticket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                            ?: ticket.pdfUri?.let { getFileNameFromUri(it.toUri()) }
                             ?: ticket.imageFilePath?.let { File(it).name }
-                            ?: ticket.imageUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                            ?: ticket.imageUri?.let { getFileNameFromUri(it.toUri()) }
 
                         existingFileName != null && existingFileName == newFileName
                     }
@@ -907,7 +931,7 @@ class TicketEditActivity : BaseActivity() {
                     uri.lastPathSegment
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             uri.lastPathSegment
         }
     }
@@ -1083,7 +1107,7 @@ class TicketEditActivity : BaseActivity() {
                         file.delete()
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Ignore cleanup errors
             }
         }
@@ -1099,11 +1123,102 @@ class TicketEditActivity : BaseActivity() {
                         file.delete()
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Ignore cleanup errors
             }
         }
 
         tempTicket = null
+    }
+
+    private fun showTicketSelectionDialog() {
+        val allTickets = TicketsRepository.getAllTickets()
+
+        // Exclude the current ticket from the list (if editing)
+        val filteredTickets = if (currentTicket != null) {
+            allTickets.filter { it.id != currentTicket!!.id }
+        } else {
+            allTickets
+        }
+
+        if (filteredTickets.isEmpty()) {
+            Toast.makeText(this, getString(R.string.no_tickets_to_copy), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Sort tickets the same way as in main list - by event date
+        val availableTickets = filteredTickets.sortedWith { ticket1, ticket2 ->
+            val date1 = ticket1.eventDate
+            val date2 = ticket2.eventDate
+            val now = Date()
+
+            when {
+                // 1. Tickets without date always on top
+                date1 == null && date2 != null -> -1
+                date1 != null && date2 == null -> 1
+                date1 == null && date2 == null -> 0
+
+                // 2. Both have dates - detailed sorting
+                date1 != null && date2 != null -> {
+                    val isUpcoming1 = date1.after(now)
+                    val isUpcoming2 = date2.after(now)
+
+                    when {
+                        // Upcoming tickets (future): closest date first
+                        isUpcoming1 && isUpcoming2 -> date1.compareTo(date2)
+
+                        // One upcoming, one expired: upcoming first
+                        isUpcoming1 && !isUpcoming2 -> -1
+                        !isUpcoming1 && isUpcoming2 -> 1
+
+                        // Both expired: older ones at bottom (reverse order)
+                        else -> date2.compareTo(date1)
+                    }
+                }
+
+                else -> 0
+            }
+        }
+
+        // Create a list of ticket titles for display with better formatting
+        val ticketTitles = availableTickets.map { ticket ->
+            val title = ticket.title
+            val venue = ticket.venue?.let { "\n📍 $it" } ?: ""
+            val date = ticket.eventDate?.let {
+                val format = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+                "\n📅 ${format.format(it)}"
+            } ?: ""
+            "$title$venue$date"
+        }.toTypedArray()
+
+        // Create dialog with scrollable list
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(getString(R.string.select_ticket_to_copy))
+        builder.setItems(ticketTitles) { _, which ->
+            val selectedTicket = availableTickets[which]
+            copyTicketData(selectedTicket)
+        }
+        builder.setNegativeButton(getString(R.string.cancel), null)
+
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun copyTicketData(ticket: Ticket) {
+        // Copy title
+        editTitle.setText(ticket.title)
+
+        // Copy venue
+        ticket.venue?.let {
+            editVenue.setText(it)
+        }
+
+        // Copy event date
+        ticket.eventDate?.let {
+            selectedDate.time = it
+            updateDateField()
+        }
+
+        Toast.makeText(this, getString(R.string.ticket_data_copied), Toast.LENGTH_SHORT).show()
     }
 }

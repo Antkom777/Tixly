@@ -1,16 +1,15 @@
 package com.tixly.app
 
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
+import androidx.core.graphics.toColorInt
+import androidx.core.net.toUri
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.tixly.app.data.Ticket
@@ -21,7 +20,6 @@ import com.tixly.app.utils.ImageProcessor
 import com.tixly.app.utils.SettingsManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
-import java.io.FileOutputStream
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -36,19 +34,6 @@ class TicketsActivity : BaseActivity() {
     private var currentAdView: com.google.android.gms.ads.AdView? = null
     private var currentLanguage: String = ""
 
-    // Launcher for PDF file selection
-    private val selectPdfLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { processPdfFile(it) }
-    }
-
-    // Launcher for image file selection
-    private val selectImageLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { processImageFile(it) }
-    }
 
     // Launcher for Settings activity to handle premium purchase results
     private val settingsLauncher = registerForActivityResult(
@@ -163,7 +148,7 @@ class TicketsActivity : BaseActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 (50 * resources.displayMetrics.density).toInt()
             )
-            setBackgroundColor(android.graphics.Color.parseColor("#F0F0F0"))
+            setBackgroundColor("#F0F0F0".toColorInt())
         }
 
         adBannerLayout.removeAllViews()
@@ -195,20 +180,6 @@ class TicketsActivity : BaseActivity() {
                         intent.type?.startsWith("image/") == true -> {
                             Toast.makeText(this, getString(R.string.image_received_via_share), Toast.LENGTH_SHORT).show()
                             processImageFile(it)
-                        }
-                    }
-                }
-            }
-            Intent.ACTION_VIEW -> {
-                intent.data?.let { uri ->
-                    when {
-                        intent.type == "application/pdf" -> {
-                            Toast.makeText(this, getString(R.string.pdf_opened_in_app), Toast.LENGTH_SHORT).show()
-                            processPdfFile(uri)
-                        }
-                        intent.type?.startsWith("image/") == true -> {
-                            Toast.makeText(this, getString(R.string.image_opened_in_app), Toast.LENGTH_SHORT).show()
-                            processImageFile(uri)
                         }
                     }
                 }
@@ -342,12 +313,14 @@ class TicketsActivity : BaseActivity() {
 
                     val intent = Intent(Intent.ACTION_VIEW).apply {
                         setDataAndType(uri, "application/pdf")
-                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
 
-                    if (intent.resolveActivity(packageManager) != null) {
+                    try {
                         startActivity(intent)
                         return
+                    } catch (_: android.content.ActivityNotFoundException) {
+                        android.util.Log.e("TicketsActivity", "No app to open PDF")
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("TicketsActivity", "Error opening internal PDF file", e)
@@ -358,15 +331,15 @@ class TicketsActivity : BaseActivity() {
         // Fallback: try original URI
         ticket.pdfUri?.let { uriString ->
             try {
-                val uri = Uri.parse(uriString)
+                val uri = uriString.toUri()
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, "application/pdf")
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
 
-                if (intent.resolveActivity(packageManager) != null) {
+                try {
                     startActivity(intent)
-                } else {
+                } catch (_: android.content.ActivityNotFoundException) {
                     Toast.makeText(this, getString(R.string.no_app_to_open_pdf), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
@@ -389,14 +362,25 @@ class TicketsActivity : BaseActivity() {
                         file
                     )
 
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(uri, "image/*")
-                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    // Determine MIME type based on file extension
+                    val mimeType = when (file.extension.lowercase()) {
+                        "jpg", "jpeg" -> "image/jpeg"
+                        "png" -> "image/png"
+                        "gif" -> "image/gif"
+                        "webp" -> "image/webp"
+                        else -> "image/*"
                     }
 
-                    if (intent.resolveActivity(packageManager) != null) {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, mimeType)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+
+                    try {
                         startActivity(intent)
                         return
+                    } catch (_: android.content.ActivityNotFoundException) {
+                        android.util.Log.e("TicketsActivity", "No app to open image")
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("TicketsActivity", "Error opening internal image file", e)
@@ -407,15 +391,19 @@ class TicketsActivity : BaseActivity() {
         // Fallback: try original URI
         ticket.imageUri?.let { uriString ->
             try {
-                val uri = Uri.parse(uriString)
+                val uri = uriString.toUri()
+
+                // Try to get MIME type from content resolver
+                val mimeType = contentResolver.getType(uri) ?: "image/*"
+
                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "image/*")
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    setDataAndType(uri, mimeType)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
 
-                if (intent.resolveActivity(packageManager) != null) {
+                try {
                     startActivity(intent)
-                } else {
+                } catch (_: android.content.ActivityNotFoundException) {
                     Toast.makeText(this, getString(R.string.no_app_to_open_image), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
@@ -446,7 +434,7 @@ class TicketsActivity : BaseActivity() {
                     val allTickets = TicketsRepository.getAllTickets()
                     val duplicateTicket = allTickets.find { existingTicket ->
                         val existingFileName = existingTicket.pdfFilePath?.let { File(it).name }
-                            ?: existingTicket.pdfUri?.let { getFileNameFromUri(Uri.parse(it)) }
+                            ?: existingTicket.pdfUri?.let { getFileNameFromUri(it.toUri()) }
                         existingFileName != null && existingFileName == fileName
                     }
 
@@ -500,7 +488,7 @@ class TicketsActivity : BaseActivity() {
                     uri.lastPathSegment
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             uri.lastPathSegment
         }
     }
@@ -545,9 +533,7 @@ class TicketsActivity : BaseActivity() {
                         !isUpcoming1 && isUpcoming2 -> 1
 
                         // Both expired: older ones at bottom (reverse order)
-                        !isUpcoming1 && !isUpcoming2 -> date2.compareTo(date1)
-
-                        else -> 0
+                        else -> date2.compareTo(date1)
                     }
                 }
 

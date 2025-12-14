@@ -37,7 +37,7 @@
     <string name="venue_not_specified">Місце не вказано</string>
 
     <!-- PDF processing -->
-    <string name="processing_pdf">Обробка PDF файлу...</string>
+    <string name="processing_pdf">Обробка PDF файлу…</string>
     <string name="pdf_processed_successfully">PDF успішно оброблено!</string>
     <string name="failed_to_process_pdf">Не вдалося обробити PDF</string>
     <string name="pdf_processing_error">Помилка обробки PDF: %1$s</string>
@@ -45,7 +45,7 @@
     <string name="pdf_opened_in_app">PDF відкрито в додатку</string>
 
     <!-- Image processing -->
-    <string name="processing_image">Обробка зображення...</string>
+    <string name="processing_image">Обробка зображення…</string>
     <string name="image_processed_successfully">Зображення успішно оброблено!</string>
     <string name="failed_to_process_image">Не вдалося обробити зображення</string>
     <string name="image_processing_error">Помилка обробки зображення: %1$s</string>
@@ -142,6 +142,13 @@
     <string name="open_attachment_desc">Відкрити вкладення</string>
     <string name="replace_attachment_desc">Замінити вкладення</string>
     <string name="delete_ticket_desc">Видалити квиток</string>
+    <string name="copy_ticket_data_desc">Копіювати дані з іншого квитка</string>
+
+    <!-- Copy ticket data -->
+    <string name="copy_ticket_data">Копіювати дані</string>
+    <string name="select_ticket_to_copy">Виберіть квиток для копіювання назви, місця і дати</string>
+    <string name="ticket_data_copied">Дані успішно скопійовано</string>
+    <string name="no_tickets_to_copy">Немає квитків для копіювання</string>
 
     <!-- App usage instructions -->
     <string name="app_usage_instructions">
@@ -158,6 +165,7 @@
         • Виберіть "Tixly" зі списку додатків\n
         • Квиток відкриється для редагування\n
         • Заповніть назву, місце та дату події\n
+          або натисніть ⊕ щоб скопіювати дані з іншого квитка\n
         • Натисніть 💾, щоб зберегти\n\n
         📱 ПЕРЕГЛЯД ТА РЕДАГУВАННЯ КВИТКІВ:\n
         • 🖊️ - редагувати квиток\n
@@ -178,9 +186,9 @@
     </string>
 
     <!-- Google Play Billing strings -->
-    <string name="loading">Завантаження...</string>
-    <string name="checking_purchase_status">Перевірка статусу покупки...</string>
-    <string name="processing_purchase">Обробка покупки...</string>
+    <string name="loading">Завантаження…</string>
+    <string name="checking_purchase_status">Перевірка статусу покупки…</string>
+    <string name="processing_purchase">Обробка покупки…</string>
     <string name="purchase_now">Купити зараз</string>
     <string name="purchase_confirmation_message">Віключити рекламу за %1$s? Це допоможе розвитку додатку.</string>
     <string name="purchase_successful">Покупка успішна</string>

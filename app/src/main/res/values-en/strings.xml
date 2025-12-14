@@ -37,15 +37,15 @@
     <string name="venue_not_specified">Venue not specified</string>
 
     <!-- PDF processing -->
-    <string name="processing_pdf">Processing PDF file...</string>
+    <string name="processing_pdf">Processing PDF file…</string>
     <string name="pdf_processed_successfully">PDF processed successfully!</string>
     <string name="failed_to_process_pdf">Failed to process PDF</string>
     <string name="pdf_processing_error">PDF processing error: %1$s</string>
-    <string name="pdf_received_via_share">PDF received to create a ticket</string>
+    <string name="pdf_received_via_share">PDF received to create ticket</string>
     <string name="pdf_opened_in_app">PDF opened in app</string>
 
     <!-- Image processing -->
-    <string name="processing_image">Processing image...</string>
+    <string name="processing_image">Processing image…</string>
     <string name="image_processed_successfully">Image processed successfully!</string>
     <string name="failed_to_process_image">Failed to process image</string>
     <string name="image_processing_error">Image processing error: %1$s</string>
@@ -142,6 +142,13 @@
     <string name="open_attachment_desc">Open attachment</string>
     <string name="replace_attachment_desc">Replace attachment</string>
     <string name="delete_ticket_desc">Delete ticket</string>
+    <string name="copy_ticket_data_desc">Copy data from another ticket</string>
+
+    <!-- Copy ticket data -->
+    <string name="copy_ticket_data">Copy data</string>
+    <string name="select_ticket_to_copy">Select a ticket to copy title, venue and date</string>
+    <string name="ticket_data_copied">Data copied successfully</string>
+    <string name="no_tickets_to_copy">No tickets available to copy</string>
 
     <!-- App usage instructions -->
     <string name="app_usage_instructions">
@@ -158,6 +165,7 @@
         • Select "Tixly" from the apps list\n
         • Ticket will open for editing\n
         • Fill in the title, venue and event date\n
+          or tap ⊕ to copy data from another ticket\n
         • Tap 💾 to save\n\n
         📱 VIEWING AND EDITING TICKETS:\n
         • 🖊️ - edit ticket\n
@@ -178,9 +186,9 @@
     </string>
 
     <!-- Google Play Billing strings -->
-    <string name="loading">Loading...</string>
-    <string name="checking_purchase_status">Checking purchase status...</string>
-    <string name="processing_purchase">Processing purchase...</string>
+    <string name="loading">Loading…</string>
+    <string name="checking_purchase_status">Checking purchase status…</string>
+    <string name="processing_purchase">Processing purchase…</string>
     <string name="purchase_now">Purchase now</string>
     <string name="purchase_confirmation_message">Disable ads for %1$s? This will help the app\'s development.</string>
     <string name="purchase_successful">Purchase successful</string>

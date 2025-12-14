@@ -1,28 +1,70 @@
 #!/bin/bash
 
+# Enable job control to properly handle background processes
+set -m
+
 echo "=== Tixly App Deployment Script ==="
+
+# Flag to track if we're in cleanup
+CLEANUP_STARTED=false
 
 # Function to cleanup emulator on script exit
 cleanup_emulator() {
+    # Prevent multiple cleanup calls
+    if [ "$CLEANUP_STARTED" = true ]; then
+        return
+    fi
+    CLEANUP_STARTED=true
+
     if [ ! -z "$EMULATOR_PID" ] && kill -0 "$EMULATOR_PID" 2>/dev/null; then
         echo ""
         echo "Shutting down emulator gracefully..."
-        # First try gentle termination
-        kill -TERM "$EMULATOR_PID" 2>/dev/null
+
+        # Try to kill the entire process group first (if we have PGID)
+        if [ ! -z "$EMULATOR_PGID" ]; then
+            kill -TERM -$EMULATOR_PGID 2>/dev/null
+        else
+            # Fallback to killing just the process
+            kill -TERM $EMULATOR_PID 2>/dev/null
+        fi
+
+        # Wait a bit for graceful shutdown
         sleep 3
 
         # Check if still running and force kill if needed
         if kill -0 "$EMULATOR_PID" 2>/dev/null; then
             echo "Force stopping emulator..."
-            kill -KILL "$EMULATOR_PID" 2>/dev/null
+            if [ ! -z "$EMULATOR_PGID" ]; then
+                kill -KILL -$EMULATOR_PGID 2>/dev/null
+            else
+                kill -KILL $EMULATOR_PID 2>/dev/null
+            fi
             sleep 1
         fi
         echo "✓ Emulator shutdown complete"
     fi
 }
 
-# Set up trap to cleanup on script exit
-trap cleanup_emulator EXIT INT TERM
+# Function to handle Ctrl+C
+handle_interrupt() {
+    echo ""
+    echo "⚠ Script interrupted by user (Ctrl+C)"
+    cleanup_emulator
+    exit 130
+}
+
+# Function to handle terminal close (SIGHUP)
+handle_terminal_close() {
+    echo ""
+    echo "⚠ Terminal closed - cleaning up..."
+    cleanup_emulator
+    exit 129
+}
+
+# Set up trap to cleanup on script exit and all termination signals
+trap cleanup_emulator EXIT
+trap handle_interrupt INT TERM
+trap handle_terminal_close HUP
 
 # Android SDK configuration
 export ANDROID_HOME=/usr/local/pkg/android-sdk
@@ -73,8 +115,14 @@ if [ $DEVICES -eq 0 ]; then
 
     # Start emulator in background with data wipe
     echo "Starting emulator $AVD_NAME with data wipe..."
+    # Start emulator in background, it will be in its own process group due to set -m
     emulator -avd $AVD_NAME -no-audio -no-snapshot-save -wipe-data &
     EMULATOR_PID=$!
+
+    # Store the process group ID for cleanup
+    EMULATOR_PGID=$(ps -o pgid= -p $EMULATOR_PID | tr -d ' ')
+
+    echo "✓ Emulator started (PID: $EMULATOR_PID, PGID: $EMULATOR_PGID)"
 
     # Wait a moment for emulator window to appear
     sleep 2
@@ -102,8 +150,13 @@ if [ $DEVICES -eq 0 ]; then
 
     # Wait for emulator to boot
     echo "Waiting for emulator to boot (this may take several minutes)..."
+    echo "Press Ctrl+C to cancel..."
     for i in {1..60}; do
-        sleep 5
+        # Use a short sleep with trap check to allow Ctrl+C to work
+        for _ in {1..5}; do
+            sleep 1 || exit 1  # Exit on interrupt
+        done
+
         if adb shell getprop sys.boot_completed 2>/dev/null | grep -q "1"; then
             echo "✓ Emulator booted successfully!"
             break
@@ -215,13 +268,10 @@ if [ ! -z "$EMULATOR_PID" ] && kill -0 "$EMULATOR_PID" 2>/dev/null; then
     echo ""
     echo "Emulator will keep running until you close this terminal..."
 
-    # Keep script running until user interrupts
-    while true; do
-        sleep 1
-        # Check if emulator is still running
-        if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
-            echo "Emulator has stopped unexpectedly"
-            break
-        fi
-    done
+    # Wait for emulator process to finish or for user to interrupt
+    # This allows proper signal handling (Ctrl+C, terminal close)
+    wait $EMULATOR_PID 2>/dev/null
+
+    echo ""
+    echo "✓ Emulator has stopped"
 fi
